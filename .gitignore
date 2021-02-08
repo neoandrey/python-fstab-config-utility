@@ -1,0 +1,7 @@
+logs/ 
+__pycache__/ 
+venv/
+run.ps1
+"logs" 
+"venv" 
+"proxy.txt" 
