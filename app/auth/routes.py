@@ -37,7 +37,7 @@ def login():
     opts['userName']    =  None
     opts['previousDest']=  None
     opts['currentTime'] =  datetime.utcnow()
-    opts['siteTitle']   =   'Compute and Storage Assets Manager'
+    opts['siteTitle']   =   'Compute and Storage Self-Service Platform (CS3P)'
     return render_template('login.html', title=_('Sign In'), pageID='login', options=opts, year='2020', form=form)
 
 

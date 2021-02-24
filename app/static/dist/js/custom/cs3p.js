@@ -6,6 +6,51 @@ import Serializer from './Serializer.js';
 import FormValidator from './FormValidator.js';
 import Form from './Form.js';
 
+ $.fn.drawSidebar = function() {
+
+  $.fn.sessionGet('sites', function(sites){
+	    $.fn.sessionGet('vcenters', function(vcenters){
+		    $.fn.sessionGet('clusters', function(clusters){
+                 alert()
+				 var  tree = [];
+				 sites.foreach(function(site){
+				 var  vcenterList = [];
+				 vcenters.foreach(function(vcenter){
+					 let clusterList = [];
+					 clusters.forEach(function(cluster){
+						 if(cluster.vcenter == vcenter){
+								clusterList.push(cluster.name)
+						 }
+						 
+					 });
+					 let  id  = vcenter.name.toLowerCase()+'-id';
+					 let vcenterObj ={
+					   text: vcenter.name,
+					   icon: "fa fa-building-o",
+					   id:  id,
+					   nodes: clusterList
+				  }
+				vcenterList.push(vcenterObj)
+				 });
+				 let  id  = site.name.toLowerCase()+'-id';
+				  let siteObj ={
+					   text: site.siteName,
+					   icon: "fa fa-sitemap",
+					   id  :id,
+					   nodes: vcenterList
+				  }
+				tree.push(siteObj) 
+			 });
+			alert(JSON.stringify(tree))
+            return JSON.stringify(tree);
+			
+	  
+			}); 				  
+		}); 
+  });
+ 
+};
+
 $.fn.emit = function(msg,data){
     //console.log('socket: ')       
     //console.dir( $.fn.socket) 
@@ -15,50 +60,7 @@ $.fn.emit = function(msg,data){
     $.fn.socket.emit(msg, data); 
             
 }
-$.fn.drawSidebar =  function(){
 
-    let paramString     = 'c=sidebarheader&qt=sel&df=table';
-    $.fn.runGet('/main/data',paramString, function(data){
-         let sidebarHeader = []
-         let headers = $.fn.getObjectType(data)=="string"?JSON.parse(data):data;
-        //$.fn.showAlert( headers);
-         sidebarHeader.push(`<div class="col-sm-2 col-lg-2"> <div class="sidebar-nav"><div class="nav-canvas"><div class="nav-sm nav nav-stacked"> </div><ul class="nav nav-pills nav-stacked main-menu">`);
-         if  (parseInt(headers.dataCount) >0) {       
-                for (let header of headers.tabData){
-                    header = $.fn.getObjectType(header)=="string"?JSON.parse(header):header;
-                    //console.dir(header)
-                    sidebarHeader.push(`<li class="nav-header" id="${header.elementID}">${header.label}</li>`);
-                        for (let j in header.menus){
-                            let menu = header.menus[j];
-                            menu = $.fn.getObjectType(menu)=="string"?JSON.parse(menu):menu;
-                        if (menu.hasSubMenu){
-                            sidebarHeader.push(`<li class="accordion" id="${menu.elementID}"><a href="${menu.href}"><i class="glyphicon glyphicon-plus"></i><span>${menu.label}</span></a>`);
-                            sidebarHeader.push(`<ul class="nav nav-pills nav-stacked">`)
-                            for (let  i in menu.subMenus){
-                                let  subMenu = menu.subMenus[i];
-                                subMenu = $.fn.getObjectType(subMenu)=="string"?JSON.parse(subMenu):subMenu;
-                                let funcName =  (subMenu.elementID.replaceAll("-",""))
-                                funcName     =  funcName+"();"
-                                sidebarHeader.push(`<li id="${subMenu.elementID}"><a href="${subMenu.href}" onclick="${funcName}">${subMenu.label}</a></li>`);
-                                }
-                            sidebarHeader.push(`</ul></li>`)
-                        
-                        }else{
-                            let functionName = menu.elementID.replaceAll('-','')+"();"
-                            sidebarHeader.push(`<li id="${menu.elementID}"><a class="${menu.elementClass}" href="${menu.href}" onclick="${functionName}"><i class="${menu.iconClass}"></i><span> ${menu.label}</span></a></li>`);
-                        }
-                    }
-                }     
-            sidebarHeader.push(`</ul> <label id="for-is-ajax" for="is-ajax"><input id="is-ajax" type="checkbox">lock</label></div></div></div>`);
-            $("#sidebar").html(sidebarHeader.join(''));
-            $.fn.refreshCharisma();
-        }
-    
-    
-    });
-    
-    }
-    
 $.fn.getExcludedColumnList = function (table, type){
     table = table.toLowerCase();
         if (type== 'table'){
@@ -75,16 +77,14 @@ $.fn.getExcludedColumnList = function (table, type){
                     return ['ldapUser','ldapPassword','emailUser','emailPassword', 'lastModifiedDate']
                 default:
                     return ['_id']
-
             }
         } else if (type== 'form'){
             switch(table){
                 case 'vcenters':
-                    return  ['_id']
+                    return  ['_id'];
                 break;
                 default:
-                    return ['_id']
-
+                    return ['_id'];
             }
 
 }
@@ -804,6 +804,69 @@ $.fn.removeRecord = function(currentTable,idColumn,recordInd){
         }}); 
 }
 
+ $.fn.getTree = function() {
+  // Some logic to retrieve, or generate tree structure
+  var tree = [
+  {
+    text: "Node 1",
+    icon: "fa fa-folder",
+    nodes: [
+      {
+        text: "Sub Node 1",
+        icon: "fa fa-folder",
+        nodes: [
+          {
+            text:  "Sub Child Node 1",
+            icon:  "fa fa-folder",
+            class: "nav-level-3",
+            nodes: [
+          {
+            text:  "Sub Child Node 1 sub child",
+            icon:  "fa fa-folder",
+            class: "nav-level-3",
+             nodes: [
+          {
+            text:  "Sub Child Node 1 sub child sub child",
+            icon:  "fa fa-folder",
+            class: "nav-level-3",
+            href:  "#option/1.1.1"
+          }
+            ]
+          }
+            ]
+          },
+          {
+            text: "Sub Child Node 2",
+            icon: "fa fa-folder"
+          }
+        ]
+      },
+      {
+        text: "Sub Node 2",
+         icon: "fa fa-folder"
+      }
+    ]
+  },
+  {
+    text: "Node 2",
+    icon: "fa fa-folder"
+  },
+  {
+    text: "Node 3",
+    icon: "fa fa-folder"
+  },
+  {
+    text: "Node 4",
+    icon: "fa fa-folder"
+  },
+  {
+    text: "Node 5",
+    icon: "fa fa-folder"
+  }
+];
+    return JSON.stringify(tree);
+}
+
 $(document).ready(function(){
 
     $('#add-item').on('click', function(e){
@@ -927,5 +990,27 @@ $(document).ready(function(){
        
     });  
 
+    $('#site-table').on('click', function(e){
+        let  currentTable = 'Sites';
+        let opts = {
+                     currentTable:currentTable
+                    ,header:'Sites Records'
+                    ,tableID:'site-table-data'
+                    ,tableIDField :'_id'
+                    ,formID:'site-form'
+                    ,tableName:'sites'
+                    ,dataType :'sites'
+                    ,excludedColList:$.fn.getExcludedColumnList(currentTable, 'table')
+                    ,parentID: 'table-tag-div'
+                    ,options: {isEditable:true, isViewable:true, isIndelible: false}
+                    ,changeable:true
+                    ,mainPage:'Settings'
+                    ,subPage:'sites'
+                 }
+                 $.fn.getTableData(opts)
+       
+    });  
+
+ $('#tree').bstreeview({ data: $.fn.drawSidebar() });
 
 });

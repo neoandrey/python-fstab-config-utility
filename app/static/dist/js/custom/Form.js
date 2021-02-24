@@ -33,7 +33,7 @@ const FormPrototype = {
      
 };
 
-$.fn.loadEmptyForm = async function (){
+$.fn.loadEmptyForm = function (){
 
         var curElement 	 = "";            
         for(let i=0; i<currentForm.excludedColList.length; i++){
@@ -42,24 +42,11 @@ $.fn.loadEmptyForm = async function (){
         for (var index in currentForm.elementList) {
 
         let  curElement = currentForm.elementList[index].name.toUpperCase();
-        if ( currentForm.excludedColList.indexOf(curElement.toLowerCase())==-1) {
-           currentForm.elementList[index].value =  currentForm.elementList[index].value.toString().replace(null, '');
-           currentForm.elementList[index].value =  currentForm.elementList[index].value.toString().replace('undefined', '');
-           currentForm.elementList[index].val =  currentForm.elementList[index].val.toString().replace(null, '');
-           currentForm.elementList[index].val =  currentForm.elementList[index].val.toString().replace('undefined', '');
-                                                                 
-            let  rData                 = {};
-            let pData                  = new Promise( function (resolve, reject) { 
-
-            $.fn.formatFormField(currentForm.elementList[index],false,false,currentForm.access.toLowerCase(), function(data){
-
-                 if(data) resolve( data);
-                 else  reject([]);
-            
-                           });
-                });
-                rData       =  await pData;
-              currentForm.elementList[index] =  rData['formElement']
+        if (currentForm.elementList[index].value &&  currentForm.excludedColList.indexOf(curElement.toLowerCase())==-1) {
+            currentForm.elementList[index].value =  currentForm.elementList[index].value.toString().replace('null', '');
+            currentForm.elementList[index].value =  currentForm.elementList[index].value.toString().replace('undefined', '');
+        } else {
+            currentForm.elementList[index].value = '';
         }
         currentForm.elementList[index].render(currentForm.elementList[index].value);
         //currentForm.addElement(currentForm.elementList[index]);
@@ -88,7 +75,10 @@ $.fn.previewImage = function(eleName) {
 
 $.fn.submitForm = function(id, elementsStr) {
     try {
-
+       // alert('submitted');
+      //  console.log('Element List: '+JSON.stringify(currentForm.elementList))
+     // $('#dialog-message-div').html('Submitting form: '+JSON.stringify(currentForm.elementList));
+      // showMessageDialog('Submitting form: '+JSON.stringify(currentForm.elementList));
        new   FormValidator({formID:id,formFields:currentForm.elementList, serialCount:currentForm.serialCount});
     } catch (e) {
        // alert(e.stack)
@@ -118,7 +108,8 @@ class Form {
             console.log("List: ")
             console.dir(currentForm.elementList)
 
-            $.fn.sessionGet(this.tableName.toLowerCase(),  function(getData){
+            $.fn.sessionGet(this.tableName.toLowerCase(), function(getData){
+
                 formSessionData = getData?JSON.parse(getData):null
                 var formData        = "";
                 console.log("Saved Session data");
@@ -136,17 +127,21 @@ class Form {
 
                             if (responseData.tabData.length > 0) { 
                                 currentForm.data      = responseData.tabData.length > 0 ? responseData.tabData : null;
-                                currentForm.data = currentForm.data  && $.fn.getObjectType(currentForm.data )=="string"?JSON.parse(currentForm.data ) : currentForm.data ;
-                                currentForm.dataCount = responseData.dataCount;d
+                                currentForm.dataCount = responseData.dataCount;
                                 $.fn.getDataFromID(currentForm.tableName, currentForm.data, currentForm.primaryKey, currentForm.recordID, 
-                                async function(cRecord){    
+                                    function(cRecord){    
                                         
                                      if(cRecord){
                                         let  rowKey  = {}
                                         let objKeys = Object.keys(cRecord);
                                         for (var index in currentForm.elementList) {
                                            let curElement = currentForm.elementList[index].name;
-                                           rowKey = objKeys.filter(x=> x.toLowerCase().replaceAll('_','').replaceAll(' ','')== curElement.toLowerCase().replaceAll('_','').replaceAll(' ',''))[0]           
+                                             for(let key of objKeys ){
+                                                  if ( key.toLowerCase().replaceAll('_','').replaceAll(' ','')== curElement.toLowerCase().replaceAll('_','').replaceAll(' ','')){
+                                                     rowKey = key;
+                                                     break;
+                                                  }
+                                             }            
                                             for(let i=0; i<currentForm.excludedColList.length; i++){
                                                 currentForm.excludedColList[i] = currentForm.excludedColList[i].toLowerCase();
                                             }
@@ -154,31 +149,12 @@ class Form {
                                             if (cRecord[rowKey]   &&   currentForm.excludedColList.indexOf(rowKey.toLowerCase())==-1) {
                                                 currentForm.elementList[index].name  = rowKey
                                                 currentForm.elementList[index].value = cRecord[rowKey]
-
-                                                let fieldProps = {}
-                                                if( ["select","datepicker","password"].indexOf( currentForm.elementList[index]['type'])>-1 || ["clickaction","description","olddata","newdata","recordidentifier"].indexOf(rowKey.toLowerCase())>-1 || !currentForm.elementList[index]['isFormatted']){
-                                                   
-                                                    let  rData                 = {};
-                                                    let pData                  = new Promise( function (resolve, reject) { 
-
-                                                    $.fn.formatFormField(currentForm.elementList[index],false,false,currentForm.access.toLowerCase(), function(data){
-
-                                                         if(data) resolve( data);
-                                                         else  reject([]);
-                                                    
-                                                                   });
-                                                        });
-                                                        rData       =  await pData;
-                                                        fieldProps  =  rData
-                                                }else{
-                                                    fieldProps =      {'formElement':currentForm.elementList[index]};
-                                                }
-                                                 
+                                          
+                                                let fieldProps =  ["select","datepicker","password"].indexOf( currentForm.elementList[index]['type'])>-1 || ["description","olddata","newdata","recordidentifier"].indexOf(rowKey.toLowerCase())>-1 || !currentForm.elementList[index]['isFormatted']? $.fn.formatFormField(currentForm.elementList[index],false,false,currentForm.access.toLowerCase()):{'formElement':currentForm.elementList[index]};
                                                 let formField  =  fieldProps['formElement']
                                                 formField.render(formField.value);
                                                 
                                             } else if(currentForm.excludedColList.indexOf(curElement.toLowerCase())==-1){
-       
                                                 currentForm.elementList[index].value = '';
                                                 currentForm.elementList[index].render('');
                                             }
@@ -203,59 +179,44 @@ class Form {
                             $.fn.sessionSet(currentForm.tableName.toLowerCase()+'_reset_flag',1);
                             $.fn.showMessageDialog('<strong>Error loading data from local storage</strong>', e.stack);
                         }
+
+                    
                 } else if ( currentForm.type.toLowerCase() === 'existing' && (!formSessionData || currentForm.resetFlag == 1)  ) { 
-                    //console.log('getting data afresh')
+                    console.log('getting data afresh')
                     $.fn.runGet(currentForm.sourceUrl,paramString, function(data){
-                                try {   
-                                        //alert(JSON.stringify(data) )    
+                        
+                                try {         
                                         responseData = $.fn.getObjectType(data)=="string"?JSON.parse(data):data;
                                         
-                                        if (responseData.tabData) {                        
+                                        if (responseData.tabData) {  
+                                            console.dir(responseData)                       
                                             currentForm.allFields = responseData.columns;
                                             currentForm.data = responseData.tabData? responseData.tabData : null;
-                                            currentForm.data = currentForm.data  && $.fn.getObjectType(currentForm.data )=="string"?JSON.parse(currentForm.data ) : currentForm.data ;
                                             var p = 0;
-                                             $.fn.getDataFromID(currentForm.tableName, currentForm.data, currentForm.primaryKey, currentForm.recordID, 
-                                             async function(cRecord){       
+                                             $.fn.getDataFromID(currentForm.tableName, currentForm.data, currentForm.primaryKey, currentForm.recordID, function(cRecord){       
                                                if(cRecord){
-                                                        console.dir(cRecord)
                                                         let  rowKey  = {} 
                                                         let objKeys = Object.keys(cRecord);
-                                                        //console.dir(currentForm.elementList)
-                                                        //console.dir(currentForm.excludedColList)
+                                                        console.dir(currentForm.elementList)
                                                         for (var index in currentForm.elementList) {
-                                                            let  curElement = currentForm.elementList[index].name;
-                                                            rowKey = objKeys.filter(x=> x.toLowerCase().replaceAll('_','').replaceAll(' ','')== curElement.toLowerCase().replaceAll('_','').replaceAll(' ',''))[0]
-                                                            
+                                                          //  console.log(currentForm.elementList[index].name)
+                                                        let  curElement = currentForm.elementList[index].name;
+                                                            for(let key of objKeys ){
+                                                                if ( key.toLowerCase().replaceAll('_','').replaceAll(' ','')== curElement.toLowerCase().replaceAll('_','').replaceAll(' ','')){
+                                                                    rowKey = key;
+                                                                    break;
+                                                                }
+                                                            }
+                                                           //console.log(`Field ${curElement}`)
                                                             for(let i=0; i<currentForm.excludedColList.length; i++){
                                                                 currentForm.excludedColList[i] = currentForm.excludedColList[i].toLowerCase();
                                                             }
-                                                            //console.log('Unfiltered: '+rowKey);
-                                                            if ( currentForm.excludedColList.indexOf(curElement.toLowerCase())==-1) {
+                
+                                                            if (cRecord[rowKey] &&   currentForm.excludedColList.indexOf(curElement.toLowerCase())==-1) {
                                                                 currentForm.elementList[index].name  = rowKey
                                                                
                                                                 currentForm.elementList[index].value = cRecord[rowKey];
-                                                                let fieldProps =  {};
-                                                                //console.log('Filtered: '+rowKey);
-                                                                if( ["select","datepicker","password"].indexOf( currentForm.elementList[index]['type'])>-1 || ["clickaction","description","olddata","newdata","recordidentifier"].indexOf( rowKey.toLowerCase())>-1|| !currentForm.elementList[index]['isFormatted']){                                                                 
-                                                                    
-                                                                        let  rData                 = {};
-                                                                        let pData                  = new Promise( function (resolve, reject) { 
-
-                                                                        $.fn.formatFormField(currentForm.elementList[index],false,false,currentForm.access.toLowerCase(), function(data){
-
-                                                                            if(data) resolve( data);
-                                                                            else  reject([]);
-
-                                                                            });
-                                                                            });
-                                                                            rData       =  await pData;
-                                                                            fieldProps  =  rData
-
-                                                                        }else{
-                                                                            fieldProps =      {'formElement':currentForm.elementList[index]};
-                                                                        }
-     
+                                                                let fieldProps =    ["select","datepicker","password"].indexOf( currentForm.elementList[index]['type'])>-1 || ["description","olddata","newdata","recordidentifier"].indexOf( rowKey.toLowerCase())>-1|| !currentForm.elementList[index]['isFormatted']? $.fn.formatFormField(currentForm.elementList[index],false,false,currentForm.access.toLowerCase()):{'formElement':currentForm.elementList[index]};
                                                                 let formField  =  fieldProps['formElement']
                                                                 formField.render(formField.value);
                                                             } else if(currentForm.excludedColList.indexOf(curElement.toLowerCase())==-1){
@@ -331,7 +292,7 @@ class Form {
             let formQuery = {}
             let formIDField = currentForm.id
             formQuery[formIDField] =  currentForm.type =='existing'? parseInt(currentForm.recordID): -1
-            currentForm.headerStr = '<div class="card '+this.formCardClass+'"><div id="form-alert-header" class="card-header" align="center"></div><div class="card-body"><form role="form" class="' + currentForm.class + '" enctype="' + currentForm.encType + '"  id ="' + currentForm.id + '" name="' + currentForm.name + '" method ="' + currentForm.method + '" action="' + currentForm.action + '" >' +
+            currentForm.headerStr = '<div class="card '+this.formCardClass+'"><div class="card-header" align="center">'+currentForm.headerTitle+'</div><div class="card-body"><form role="form" class="' + currentForm.class + '" enctype="' + currentForm.encType + '"  id ="' + currentForm.id + '" name="' + currentForm.name + '" method ="' + currentForm.method + '" action="' + currentForm.action + '" >' +
                 '<fieldset><input id="is-form-data-valid" type="hidden" name="is_form_data_valid" value="NO"/> ';
                 currentForm.headerStr += '   <input type ="hidden"  id="edit-type" name="edit_type" value="' + currentForm.type + '" />' +
                 '<input id="data-item" type="hidden" name="data_item" value="' + currentForm.tableName + '"/>' +
@@ -342,7 +303,7 @@ class Form {
         }
         getFooterStr() {
             currentForm.footerStr = '';
-            currentForm.footerStr += '</div><div class="card-footer"><div class="form-actions"<div id="submit-form-loader"  align="center" style="display:none;"> <img src="/static/img/ajax-loaders/ajax-loader-7.gif" title="ajax-loader-7.gif"> ' +
+            currentForm.footerStr += '</div><div class="card-footer"><div class="form-actions"<div id="submit-form-loader"  align="center" style="display:none;"> <img src="/static/images/ajax-loaders/ajax-loader-7.gif" title="ajax-loader-7.gif"> ' +
                 '<br />&nbsp;<br /> </div>';
             var elementListtring = JSON.stringify(currentForm.elementList);
            $.fn.sessionSet(currentForm.id + '_form_elements', elementListtring);

@@ -415,9 +415,9 @@ class FormValidator {
 
     isValidPass(field) {
 
-       if (this.isNumeric(field)) return false;
-       if (this.isAlphabetic(field)) return false;
-       if (this.isAlphanumSpecial(field)) {
+       if (isNumeric(field)) return false;
+       if (isAlphabetic(field)) return false;
+       if (isAlphanumSpecial(field)) {
 
            return true;
 
@@ -579,16 +579,13 @@ class FormValidator {
         }
         
         if (!shouldProceed) {
-            let currentItem = $.fn.capitalizeFirstLetter($('#current-item').val());
-
             invalidFields += '</ol></div>';
-            let header =`<span align="center" style="font-weight:bold; font-size:20px;">New ${currentItem} Data Errors</span>`;
+            let header ='<span align="center" style="font-weight:bold; font-size:20px;">New ' + $.fn.addSpaceBeforeEachCapital($.fn.capitalizeFirstLetter(formValidater.formID.toString().replace('s_id',''))) + ' Entry</span>';
             let  message = invalidFields
             $.fn.showMessageDialog (header,message);
-            $('#form-alert-header').html('<div class="alert alert-danger" role="alert">Please correct the errors below: </div>')
 
         } else {
-             $('#form-alert-header').html('<div class="alert alert-success" role="alert"> No errors found in information provided: </div>')
+
             $('#is-form-data-valid').val('YES');
             let formType         =  $('#qt').val();
             var payload          = {};
@@ -596,45 +593,42 @@ class FormValidator {
             let formData         = new FormData();
             var imageCount       = 0;
             var  imageCategory   =  null;
-            var  imageChanged    =  $('#image-changed')? $('#image-changed').val()=="1":false
-      
-            if(imageChanged) {
-                    $('#' + formId).find('input').each(function() {
-                        var formElement = $(this);
-                        let elementName = $(this).attr('name');
-                        let elementID   = $(this).attr('id')
+             $('#' + formId).find('input').each(function() {
+                 var formElement = $(this);
+                 let elementName = $(this).attr('name');
+                 let elementID   = $(this).attr('id')
 
-                        if((elementName.toLowerCase().indexOf('image')>0||elementName.toLowerCase().indexOf('logo')>0) && elementName.indexOf('text')<0 ){    
-                            console.log("name: "+elementName)     
-                            let eleName  = elementName.replace('_element','');
-                            console.log('Element ID: '+elementID)
-                            let imageFile = $('#'+elementID).prop('files')[0];
-                            if(imageFile){
-                                console.dir(imageFile)
-                                imageCategory = eleName;
-                                formData.append('imagecategory',imageCategory);
-                                formData.append('filename',imageFile['name']);
-                                formData.append('fileformat',imageFile['type']);
-                                formData.append('filesize',imageFile['size']);
-                                formData.append('sourceUrl',$('#'+elementID).val());
-                                formData.append('action','add');
-                                formData.append('lastmodifieddate', moment(imageFile['lastModified']).format('YYYY-MM-DD hh:mm:ss'));
-                                formData.append('image_file', imageFile);
-                                ++imageCount;
-                            } else{
-                                    console.log("No image found.")
-                            }
-                        } 
+                 if((elementName.toLowerCase().indexOf('image')>0||elementName.toLowerCase().indexOf('logo')>0) && elementName.indexOf('text')<0 ){    
+                     console.log("name: "+elementName)     
+                     let eleName  = elementName.replace('_element','');
+                     console.log('Element ID: '+elementID)
+                     let imageFile = $('#'+elementID).prop('files')[0];
+                     if(imageFile){
+                         console.dir(imageFile)
+                         imageCategory = eleName;
+                         formData.append('imagecategory',imageCategory);
+                         formData.append('filename',imageFile['name']);
+                         formData.append('fileformat',imageFile['type']);
+                         formData.append('filesize',imageFile['size']);
+                         formData.append('sourceUrl',$('#'+elementID).val());
+                         formData.append('action','add');
+                         formData.append('lastmodifieddate', moment(imageFile['lastModified']).format('YYYY/MM/DD hh:mm:ss'));
+                         formData.append('image_file', imageFile);
+                         ++imageCount;
+                      } else{
+                            console.log("No image found.")
+                      }
+                 } 
 
-                    });
-              }
+             });
+
                  if(imageCount >0 ){
              
-                    let  imageDimensions = JSON.stringify($.fn.getImageDimensions(imageCategory));
+                    let  imageDimensions = JSON.stringify(getImageDimensions(imageCategory));
                     console.log("image dimensions: "+imageDimensions)
                     formData.append('dimensions', imageDimensions)
                    
-                    $.fn.runImagePost('/images',formData,function(response) {
+                    runImagePost('/images',formData,function(response) {
                     if (!response.error) {
                         console.dir(response)
                         let  imageUrl = response['uploadPath'];
@@ -658,7 +652,7 @@ class FormValidator {
                             $('#cancel-bttn').hide();
                                 let fData = {pl: payload}
                                 Object.assign(fInputs, fData);
-                                $.fn.ajaxFormSubmit(formTarget, fInputs, nextPageBttn); //, $.fn.closeDialog());
+                                $.fn.ajaxFormSubmit(formTarget, fInputs, nextPageBttn, $.fn.closeDialog());
                             }  else{
 
                                 $.fn.showMessageDialog ("Image Upload Error", response.error);
@@ -674,20 +668,13 @@ class FormValidator {
                     let  valueOfElement             = $(this).val();
                     let  elementID                  = $(this).attr('id')
                     let  imageIDSuffix              = "_id-text"
-                    let  elementSuffix              ="_element_text"
    
                     if ($(this).attr('type')=="hidden"){
                         fInputs[nameOfElement]= valueOfElement;
-                    } else if(imageChanged && (nameOfElement.toLowerCase().indexOf('image')>0||nameOfElement.toLowerCase().indexOf('logo')>0)  && nameOfElement.indexOf('text')<0 ){
+                    } else if(nameOfElement.indexOf('image')>0 && nameOfElement.indexOf('text')<0 ){
                         valueOfElement        =  document.getElementById(nameOfElement+imageIDSuffix).value
                         payload[nameOfElement]= valueOfElement;
-                        
-                    }else if(!imageChanged && (nameOfElement.toLowerCase().indexOf('image')>0||nameOfElement.toLowerCase().indexOf('logo')>0)  && nameOfElement.indexOf('text')<0 ){
-                        valueOfElement        =  $('#image-file-path').val();
-                        payload[nameOfElement]= valueOfElement;
-                        
-                    } else{
-
+                    }else{
                         payload[nameOfElement]= valueOfElement;
                     }
                 });  
@@ -696,7 +683,7 @@ class FormValidator {
                     let formData = {pl: payload}
                    // alert('running default post')
                     Object.assign(fInputs, formData);
-                    $.fn.ajaxFormSubmit(formTarget, fInputs, nextPageBttn);//, $.fn.closeDialog());
+                    $.fn.ajaxFormSubmit(formTarget, fInputs, nextPageBttn, $.fn.closeDialog());
                 }
         }
         //var page_url =window.location.href;

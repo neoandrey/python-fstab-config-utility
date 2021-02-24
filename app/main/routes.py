@@ -7,7 +7,7 @@ from flask_babel import _, get_locale
 #from guess_language import guess_language
 from app import db, moment
 from app.main.forms import LoginForm,VCenterForm #, EditProfileForm, EmptyForm, PostForm, SearchForm, MessageForm
-from app.models import Users, Teams, Roles, Vcenters, AuditTrail, SiteSettings,Images #, Post, Message, Notification
+from app.models import Users, Teams, Roles, Vcenters, AuditTrail, SiteSettings,Images,VMs,Datastores,Clusters, Hosts #, Post, Message, Notification
 #from app.translate import translate
 from app.main import bp
 import traceback, json
@@ -82,11 +82,11 @@ def process_image_request():
                 change_type            =  'INSERT'
                 oldData				  =   {}
                 newData 			      =   image.to_mongo()
-                auditTrail             =   AuditTrail(id=trailIndex,description= description_info, oldData=oldData, newData=newData,affectedTable=model,changeTime=str(datetime.utcnow()),changeType=change_type,userName=current_user.username,userID=current_user.id,recordIdentifier=query_fields )
+                auditTrail                =   AuditTrail(id=trailIndex,description= description_info, oldData=oldData, newData=newData,affectedTable=model,changeTime=str(datetime.utcnow()),changeType=change_type,userName=current_user.username,userID=current_user.id,recordIdentifier=query_fields )
                 auditTrail.save()
-                image                  = Image.open(uploaded_file_path)
-                resized_image          = image.resize((dimensions['width'], dimensions['height']))
-                sharp_image            = ImageEnhance.Sharpness(resized_image)
+                image                     = Image.open(uploaded_file_path)
+                resized_image             = image.resize((dimensions['width'], dimensions['height']))
+                sharp_image               = ImageEnhance.Sharpness(resized_image)
                 sharp_image.enhance(1.85).save(uploaded_file_path)
                 response['uploadPath']    = image_path
                 response['imageCategory'] = imageCategory
@@ -142,6 +142,14 @@ def getSchema():
         return jsonify(SiteSettings.get_schema())
     elif model == 'images':
         return jsonify(Images.get_schema())
+    elif model == 'sites':
+        return jsonify(Sites.get_schema())
+    elif model == 'hosts':
+        return jsonify(Hosts.get_schema())
+    elif model == 'datastores':
+        return jsonify(Datastores.get_schema())
+    elif model == 'clusters':
+        return jsonify(Clusters.get_schema())
 
 
 
@@ -284,6 +292,22 @@ def process_data_request():
                             response['error']        = None
                             response['record_index'] = record_index
                             return jsonify(response)
+                        elif (model =='sites'):
+                            print('last record if: '+str(Sites.get_last_record_id()))
+                            record_index     =  Sites.get_last_record_id() +1
+                            print('record index: {}'.format(record_index))
+                            site                     =  Sites(id       = record_index,
+                            siteName                 =  request.form['pl[sitename]'],
+                            lastModifiedDate         =  request.form['pl[lastmodifieddate]']
+                                )
+                            site.save()
+                            response['message']      = 'A new record  has been successfully added to Sites'
+                            response['isSuccessful'] =  True
+                            response['model']        = 'Sites'
+                            response['header']       = 'New Site Settings Record'
+                            response['error']        = None
+                            response['record_index'] = record_index
+                            return jsonify(response)
                     elif action ==  'udt':
                         print('updating record')
                         if (model =='vcenters'):
@@ -338,6 +362,18 @@ def process_data_request():
                             response['error']        = None
                             response['record_index'] = query_fields['_id']
                         return  jsonify(response)   
+                        elif (model =='sites'):
+                            siteSettings      		 =  Sites.objects(__raw__=query_fields).update( 
+                            set__siteName            =  request.form['pl[sitename]'],
+							set__lastModifiedDate    =  request.form['pl[lastmodifieddate]']							
+                            )
+                            response['message']      = 'The details of the \'{}\' have been successfully updated'.format(request.form['pl[sitename]'])
+                            response['isSuccessful'] = True
+                            response['model']        = 'Sites'
+                            response['header']       = 'Sites Update'
+                            response['error']        = None
+                            response['record_index'] = query_fields['_id']
+                        return  jsonify(response)  
                     elif action ==  'del':
                         print('deleting record...')
                         record_index = query_fields['_id']
@@ -360,6 +396,16 @@ def process_data_request():
                             response['error']        = None
                             response['record_index'] = record_index
                         return  jsonify(response)           
+                        elif (model =='sites'):
+                            team   = Sites.objects(__raw__=query_fields).first()
+                            team.delete()
+                            response['message']      = 'Sites with  ID \'{}\' has been successfully removed'.format(record_index)
+                            response['isSuccessful'] = True
+                            response['model']        = 'Sites'
+                            response['header']       = 'Sites Record Removal'
+                            response['error']        = None
+                            response['record_index'] = record_index
+                        return  jsonify(response) 
             elif method  == 'get':
                 print("model: {}".format(model))
                 print("action: {}".format(action))
@@ -404,6 +450,48 @@ def process_data_request():
                     elif action=='sel' and display_format=='table' :
                         image_record = Images.objects.all()
                         return jsonify({'columns':(Images.get_schema())[model],'tabData':image_record,'dataCount':(Images.get_record_count())})                
+                elif model =='vms':
+                    if action=='sel' and display_format=='form':
+                        results         = VMs.objects(__raw__=query_fields).first() if  query_fields is not None else []
+                        return  jsonify({'columns':(VMs.get_schema())[model],'tabData':results,'dataCount':1 })
+                    elif action=='sel' and display_format=='table' :
+                        image_record = VMs.objects.all()
+                        return jsonify({'columns':(VMs.get_schema())[model],'tabData':image_record,'dataCount':(VMs.get_record_count())})              
+                elif model =='sites':
+                    if action=='sel' and display_format=='form':
+                        results         = Sites.objects(__raw__=query_fields).first() if  query_fields is not None else []
+                        return  jsonify({'columns':(Sites.get_schema())[model],'tabData':results,'dataCount':1 })
+                    elif action=='sel' and display_format=='table' :
+                        image_record = Sites.objects.all()
+                        return jsonify({'columns':(Sites.get_schema())[model],'tabData':image_record,'dataCount':(Sites.get_record_count())})
+                elif model =='clusters':
+                    if action=='sel' and display_format=='form':
+                        results         = Clusters.objects(__raw__=query_fields).first() if  query_fields is not None else []
+                        return  jsonify({'columns':(Clusters.get_schema())[model],'tabData':results,'dataCount':1 })
+                    elif action=='sel' and display_format=='table' :
+                        image_record = Clusters.objects.all()
+                        return jsonify({'columns':(Clusters.get_schema())[model],'tabData':image_record,'dataCount':(Clusters.get_record_count())})  						
+                elif model =='datastores':
+                    if action=='sel' and display_format=='form':
+                        results         = Datastores.objects(__raw__=query_fields).first() if  query_fields is not None else []
+                        return  jsonify({'columns':(Datastores.get_schema())[model],'tabData':results,'dataCount':1 })
+                    elif action=='sel' and display_format=='table' :
+                        image_record = Datastores.objects.all()
+                        return jsonify({'columns':(Datastores.get_schema())[model],'tabData':image_record,'dataCount':(Datastores.get_record_count())})  
+                elif model =='datastores':
+                    if action=='sel' and display_format=='form':
+                        results         = Datastores.objects(__raw__=query_fields).first() if  query_fields is not None else []
+                        return  jsonify({'columns':(Datastores.get_schema())[model],'tabData':results,'dataCount':1 })
+                    elif action=='sel' and display_format=='table' :
+                        image_record = Datastores.objects.all()
+                        return jsonify({'columns':(Datastores.get_schema())[model],'tabData':image_record,'dataCount':(Datastores.get_record_count())}) 
+                elif model =='hosts':
+                    if action=='sel' and display_format=='form':
+                        results         = Hosts.objects(__raw__=query_fields).first() if  query_fields is not None else []
+                        return  jsonify({'columns':(Hosts.get_schema())[model],'tabData':results,'dataCount':1 })
+                    elif action=='sel' and display_format=='table' :
+                        image_record = Hosts.objects.all()
+                        return jsonify({'columns':(Hosts.get_schema())[model],'tabData':image_record,'dataCount':(Hosts.get_record_count())}) 
         else:
             response['message']      = 'form is not valid'
             response['isSuccessful'] = False
@@ -458,7 +546,7 @@ def index():
     opts['userName']    =  None
     opts['previousDest']=  None
     opts['currentTime'] =  datetime.utcnow()
-    opts['siteTitle']   =   'Compute and Storage Assets Manager'
+    opts['siteTitle']   =   'Compute and Storage Self-Service Platform (CS3P)'
     return render_template('index.html', title='Dashboard',pageID='dashboard',options=opts)
 
 """

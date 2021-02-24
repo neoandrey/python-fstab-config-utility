@@ -31,7 +31,6 @@ init (options) {
     this.value              = options.value;
     this.html               = "";
     this.alternativeValues  = options.alternativeValues;
-    this.alternativeKeys    = options.alternativeKeys?options.alternativeKeys:options.alternativeValues;
     this.chosenValue        = options.chosenValue;
     this.errorMessage       = options.errorMessage;
     this.valueMap           = options.valueMap;
@@ -76,25 +75,18 @@ render(valueData) {
         fieldStr = '<div class="'+this.outerDivClass+'"  id="' + norm_div_id + '"><label class="control-label" for="' + id + '">' + field + '</label>' +
             '<div class="controls" align="left"><select id="' + id + '" name="' + input_name + '" data-rel="chosen" class="form-control form-control-lg"  '+this.action+'>';
         var currentValue = this.chosenValue; //this.alternativeValues[this.chosenValue];
-        this.alternativeKeys =this.alternativeKeys.length >0?this.alternativeKeys:this.alternativeValues;
         for (var i = 0; i < this.alternativeValues.length; ++i) {
-
-            if (this.alternativeValues[i].toString().toLowerCase() === this.chosenValue.toString().toLowerCase() || this.alternativeKeys[i].toString().toLowerCase() === this.chosenValue.toString().toLowerCase()) {
-                fieldStr += '<option value="' + this.alternativeKeys[i] + '" selected>' + this.alternativeValues[i] + '</option>';
+           // console.log("this.alternativeValues[i].toLowerCase(): "+this.alternativeValues[i].toLowerCase())
+           // console.log(" this.chosenValue.toLowerCase(): "+ this.chosenValue.toLowerCase())
+            if (this.alternativeValues[i].toLowerCase() === this.chosenValue.toLowerCase()) {
+                fieldStr += '<option value="' + currentValue + '" selected>' + currentValue + '</option>';
             } else {
-                fieldStr += '<option value="' + this.alternativeKeys[i] + '">' + this.alternativeValues[i] + '</option>';
+                fieldStr += '<option value="' + this.alternativeValues[i] + '">' + this.alternativeValues[i] + '</option>';
             }
         }
         fieldStr += '</select> <input type="hidden" id="' + id + '_value" name="' + input_name + '_value"  value=""/></div> </div>';
     }else{
-                this.alternativeKeys =this.alternativeKeys.length >0?this.alternativeKeys:this.alternativeValues;
-                for (var i = 0; i < this.alternativeValues.length; ++i) {
 
-                    if (this.alternativeValues[i].toString().toLowerCase() === this.chosenValue.toString().toLowerCase() || this.alternativeKeys[i].toString().toLowerCase() === this.chosenValue.toString().toLowerCase()) {
-                                valueData =  this.alternativeValues[i];
-                    }
-                }
-        valueData=valueData.toString().trim().length ==0 ?this.val:valueData
         fieldStr = '<div class="'+this.outerDivClass+'"  id="' + norm_div_id + '"><label class="control-label" for="' + id + '">' + field + '</label>' +
         '<input class="form-control form-control-lg disabled" type="text" disabled="" placeholder="' + valueData + '" id="' + id + '" name="' + input_name + '" value="' + valueData + '">' +
         '<span class="help-inline text-danger" style="display:none;" id="' + message_id + '">This value is not allowed</span></div> ';
@@ -187,21 +179,22 @@ render(valueData) {
               '</div>';
               */
     } else if (this.type === 'image') {
-         if(input_name.toLowerCase().indexOf('profile')>-1){
-            this.info = this.value? '<div align="center"><img src="'+this.value+'" alt="'+field+'" class="rounded-circle"></div>':this.info
+         if(id.toLowerCase().indexOf('profile')>-1){
+            this.info = this.value? '<img src="'+this.value+'" alt="'+field+'" class="rounded-circle">':this.info
          }else {
-            this.info = this.value? '<div align="center"><img src="'+this.value+'" alt="'+field+'"></div>':this.info
+            this.info = this.value? '<img src="'+this.value+'" alt="'+field+'">':this.info
          }
         
         fieldStr = '<div class="'+this.outerDivClass+'"  id="' + norm_div_id + '"><label class="control-label" for="' + id + '">' + field + '</label>' +
             '<div class="row" id="uniform-fileInput">' +
-            '<div id="' + input_name + '-image-preview" style="display:block;margin:auto;" align="center">'+ this.info+'</div>' ;
+            '<div id="' + input_name + '-image-preview" style="display:block;margin:auto;">'+ this.info+'</div>' ;
             if(this.editable){
+
                 fieldStr += 
-                '<div class="col-lg-10 mr-0"><input class="form-control form-control-md" id="' + id + '-text" type="text" name="' + input_name + '_text" value="' + valueData + '" /><input id="image-changed" type="hidden" name="image_changed" value="0" /><input id="image-file-path" type="hidden" name="image_file_path" value="'+this.value+'" /></div>' +
-                '<div class="col-lg-2 mr-0"><button type="button" class="btn btn-info" onclick="document.querySelector(\'#fileInput\').click();">Upload</button></div>' +
-                '<div class="col-lg-2 mr-0"><input class="form-control-file" id="fileInput" type="file"   name="' + input_name + '"  style="opacity: 75; display:none" onchange="document.querySelector(\'#' + id + '-text\').value=document.querySelector(\'#fileInput\').value; $.fn.previewImage(\'' + input_name + '\');document.querySelector(\'#image-changed\').value=1" value="' + valueData + '"/></div>' +
-                '<span class="help-inline text-danger" style="display:none;" id="' + message_id + '">No file selected</span>' ;
+            '<div class="col-lg-10 mr-0"><input class="form-control form-control-md" id="' + id + '-text" type="text" name="' + input_name + '_text" value="' + valueData + '" /></div>' +
+            '<div class="col-lg-2 mr-0"><button type="button" class="btn btn-info" onclick="document.querySelector(\'#fileInput\').click();">Upload</button></div>' +
+            '<div class="col-lg-2 mr-0"><input class="form-control-file" id="fileInput" type="file"   name="' + input_name + '"  style="opacity: 75; display:none" onchange="document.querySelector(\'#' + id + '-text\').value=document.querySelector(\'#fileInput\').value; $.fn.previewImage(\'' + input_name + '\')"></div>' +
+            '<span class="help-inline text-danger" style="display:none;" id="' + message_id + '">No file selected</span>' ;
             }
             fieldStr += '</div></div>';
 

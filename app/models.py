@@ -179,8 +179,7 @@ class Users(UserMixin, PaginatedAPIMixin, db.Document):
         return Task.objects(name=name, user=self,complete=False).first()
 
     def to_dict(self, include_email=False):
-        data = {
-            
+        data = {      
         }
         if include_email:
             data['email'] = self.email
@@ -219,6 +218,26 @@ class Users(UserMixin, PaginatedAPIMixin, db.Document):
 def load_user(id):
     return Users.objects(id=int(id)).first()
 
+class Sites(PaginatedAPIMixin,db.Document):
+    id                  =  db.IntField(primary_key=True)
+    name                =  db.StringField(index=True, unique=True)
+    description         =  db.StringField( unique=True)
+    creationDate        =  db.DateTimeField(index=True)
+    lastModifiedDate    =  db.DateTimeField(index=True, default=datetime.utcnow)
+
+    @staticmethod
+    def get_schema():
+        schema_data =  {'idField':'_id','sites':{'_id':'id','name':'Name','description':'Description','creationDate':'crearionDate','lastModifiedDate':'Last Modified Date'},'sc':0,'order': ['_id','name','description','creationDate','lastModifiedDate']}
+        return schema_data
+
+    @staticmethod
+    def get_record_count():
+        return Sites.objects().all().count()
+
+    @staticmethod
+    def get_last_record_id():
+        return  int(Sites.objects().order_by('-_id').first()['id']) if  Sites.get_record_count()>0 else 0
+        
 class Vcenters(PaginatedAPIMixin, db.Document):
     id                  = db.IntField(primary_key=True)
     name                = db.StringField(max_length = (255),index=True )
@@ -229,13 +248,14 @@ class Vcenters(PaginatedAPIMixin, db.Document):
     serviceUri          = db.StringField(max_length = (255), unique=True)
     port                = db.IntField()
     productLine         = db.StringField(max_length = (20) )
+    site                = db.StringField(max_length = (20) )
     creationDate        = db.DateTimeField(index=True, default=datetime.utcnow)
     lastModifiedDate    = db.DateTimeField(index=True, default=datetime.utcnow)
     active              = db.BooleanField( default=True)
     
     @staticmethod
     def get_schema():
-      schema_data = {'idField':'_id','vcenters':{'_id':'id','name':'Name','ipAddress':'IPAddress','version':'Version','username':'Username','password':'Password','serviceUri':'ServiceURI','port':'Port','productLine':'ProductLine','creationDate':'CreationDate','lastModifiedDate':'LastModifiedDate','active':'Active'},'sc':3,'order': ['_id','name','ipaddress','version','username','password','serviceUri','port','productLine','creationDate','lastModifiedDate','active'] }
+      schema_data = {'idField':'_id','vcenters':{'_id':'id','name':'Name','ipAddress':'IPAddress','version':'Version','username':'Username','password':'Password','serviceUri':'ServiceURI','port':'Port','productLine':'ProductLine','creationDate':'CreationDate','lastModifiedDate':'LastModifiedDate','active':'Active','site':'Site'},'sc':3,'order': ['_id','name','ipaddress','version','username','password','serviceUri','port','productLine','site','creationDate','lastModifiedDate','active'] }
       return schema_data 
 
     @staticmethod
@@ -257,7 +277,7 @@ class Tasks(db.Document):
 
     @staticmethod
     def get_schema():
-      schema_data = {'idField':'id','Tasks':{'_id':'id','name':'Name','description':'Description','userID':'User ID','complete':'Complete','startTime':'Start Time','endTime':'End Time', 'result':'Result'}, 'sc':0, 'order': ['_id','name','description','userID','complete','startTime','endTime','result']}
+      schema_data = {'idField':'_id','Tasks':{'_id':'id','name':'Name','description':'Description','userID':'User ID','complete':'Complete','startTime':'Start Time','endTime':'End Time', 'result':'Result'}, 'sc':0, 'order': ['_id','name','description','userID','complete','startTime','endTime','result']}
       return schema_data 
 
     def get_rq_job(self):
@@ -342,3 +362,155 @@ class Images(PaginatedAPIMixin,db.Document):
     @staticmethod
     def get_last_record_id():
         return  int(Images.objects().order_by('-_id').first()['id']) if  Images.get_record_count()>0 else 0
+
+class Sites(PaginatedAPIMixin,db.Document):
+    id                  =  db.IntField(primary_key=True)
+    siteName            =  db.StringField(index=True, unique=True)
+    lastModifiedDate    =  db.DateTimeField(index=True, default=datetime.utcnow)
+
+    @staticmethod
+    def get_schema():
+      schema_data =  {'idField':'_id','sites':{'_id':'id','siteName':'Site Name','lastModifiedDate':'Last Modified Date'},'sc':0,'order': ['_id','siteName','lastModifiedDate']}
+      return schema_data
+
+    @staticmethod
+    def get_record_count():
+        return Sites.objects().all().count()
+
+    @staticmethod
+    def get_last_record_id():
+        return  int(Sites.objects().order_by('-_id').first()['id']) if  Sites.get_record_count()>0 else 0
+
+class Clusters(PaginatedAPIMixin,db.Document):
+    id                   =  db.IntField(primary_key=True)
+    modifiedDate         =  db.DateTimeField(index=True)
+    ds_list              =  db.ListField(db.StringField())
+    host_list    	     =  db.ListField(db.StringField())
+    resourcePool         =  db.DictField()
+    name        		 =  db.StringField(index=True)
+    site                 =  db.StringField()
+    vm_list              =  db.ListField(db.StringField())
+    vcenter              =  db.StringField()
+    network_list         =  db.ListField(db.StringField())
+	
+    @staticmethod
+    def get_schema():
+      schema_data =  {'idField':'_id','clusters':{'_id':'id','modifiedDate':'Modified Date','ds_list':'Datastores','host_list':'Hosts','resourcePool':'ResourcePool','name':'Name','site':'Site','vm_list':'Virtual Machines','vcenter':'VCenter','network_list':'Networks'},'sc':0,'order': ['_id','modifiedDate','ds_list','host_list','resourcePool','name','site','vm_list','vcenter','network_list']}
+      return schema_data
+
+    @staticmethod
+    def get_record_count():
+        return Clusters.objects().all().count()
+
+    @staticmethod
+    def get_last_record_id():
+        return  int(Clusters.objects().order_by('-_id').first()['id']) if  Clusters.get_record_count()>0 else 0
+        
+class Datastores(PaginatedAPIMixin,db.Document):
+    id                   =  db.IntField(primary_key=True)
+    site                 =  db.StringField()
+    freeSpace            =  db.StringField()
+    vcenter              =  db.StringField()
+    capacity             =	db.StringField()
+    modifiedDate         =  db.StringField(index=True)
+    name                 =  db.StringField(index=True )
+    summary              =  db.DictField()
+    cluster              =  db.StringField()
+    freeSpacePercentage  =  db.StringField()
+    uncommittedSpace     =  db.LongField()
+    modifiedDate         =  db.StringField(index=True )    
+    @staticmethod
+    def get_schema():
+        schema_data =  {'idField':'_id','datastores':{'_id':'id','site':'Site','freeSpace':'Free Space','vcenter':'VCenter','capacity':'Capacity','modifiedDate':'Modified Date','name':'Name','summary':'Summary','cluster':'Cluster','freeSpacePercentage':'Free Space Percentage','uncommittedSpace':'Uncommitted Space'},'sc':0,'order': ['id','site','freeSpace','vcenter','capacity','modifiedDate','name','summary','cluster','freeSpacePercentage','uncommittedSpace']}
+        return schema_data
+
+    @staticmethod
+    def get_record_count():
+        return Datastores.objects().all().count()
+
+    @staticmethod
+    def get_last_record_id():
+        return  int(Datastores.objects().order_by('-_id').first()['id']) if  Datastores.get_record_count()>0 else 0
+
+class Hosts(PaginatedAPIMixin,db.Document):
+    id                   =  db.IntField(primary_key=True)
+    physical_nics        =  db.ListField(db.DictField())
+    cluster              =  db.StringField()
+    virtual_switches     =  db.ListField(db.DictField())
+    memoryCapacityInMB   =	db.StringField()
+    cpuUsage             =  db.LongField()
+    virtual_nics         =  db.ListField(db.DictField())
+    name                 =  db.StringField(index=True )
+    ds_list              =  db.ListField(db.DictField())
+    vm_list              =  db.ListField(db.StringField())
+    memoryUsage          =  db.LongField()
+    nw_list              =  db.ListField(db.StringField())
+    memoryCapacity       =  db.LongField()
+    stats                =  db.DictField()
+    ports_groups         =  db.ListField(db.DictField())
+    site                 =  db.StringField()
+    summary              =  db.DictField()
+    hardware             =  db.DictField()
+    vcenter              =  db.StringField(index=True )
+    freeMemoryPercentage =  db.StringField()
+    modifiedDate         =  db.StringField(index=True )
+
+    @staticmethod
+    def get_schema():
+        schema_data =  {'idField':'_id','hosts':{'_id':'id','physical_nics':'Physical NICs','cluster':'Cluster','virtual_switches':'Virtual Switches',
+        'memoryCapacityInMB':'Memory Capacity (MB)','cpuUsage':'CPU Usage','virtual_nics':'Virtual NICs','name':'Name','ds_list':'Datastores','vm_list':'VMs',
+        'memoryUsage':'Memory Usage','nw_list':'Networks','memoryCapacity': 'Memory Capacity','stats':'Statistics','ports_groups':'Port Groups','site':'Site',
+        'summary':'Summary', 'hardware':'Hardware','vcenter':'VCenter','freeMemoryPercentage':'freeMemoryPercentage','modifiedDate':'Modified Date'},'sc':0,'order': ['_id','physical_nics','cluster','virtual_switches','memoryCapacityInMB','cpuUsage','virtual_nics','name','ds_list','vm_list','memoryUsage','nw_list','memoryCapacity','stats','ports_groups','site','summary','hardware','vcenter','freeMemoryPercentage','modifiedDate']}
+        return schema_data
+
+    @staticmethod
+    def get_record_count():
+        return Hosts.objects().all().count()
+
+    @staticmethod
+    def get_last_record_id():
+        return  int(Hosts.objects().order_by('-_id').first()['id']) if  Hosts.get_record_count()>0 else 0
+
+class VMs(PaginatedAPIMixin,db.Document):
+    id                   =  db.IntField(primary_key=True)
+    vm_name              =  db.StringField(index=True )
+    owner                =  db.StringField( index=True )
+    team                 =  db.StringField( index=True )
+    ip                   =	db.StringField( index=True )
+    host                 =  db.StringField()
+    connectionState      =  db.StringField()
+    powerState           =  db.StringField()
+    maxCpuUsage          =  db.StringField()
+    memoryUsage          =  db.LongField()
+    os_name              =  db.StringField( index=True )
+    disk_summary         =  db.ListField(db.DictField())
+    dns_name		     =  db.StringField()
+    datastores           =  db.ListField(db.StringField())
+    ports_groups         =  db.ListField(db.DictField())
+    site                 =  db.StringField()
+    vm_is_tempate        =  db.BooleanField( index=True )
+    vmPathName           =  db.StringField()
+    memorySizeMB         =  db.StringField()
+    cpuReservation       =  db.LongField()
+    memoryReservation    =  db.LongField()
+    numCpu               =  db.LongField()
+    numEthernetCards     =  db.LongField()
+    numVirtualDisks      =  db.LongField()
+    vcenter              =  db.StringField()
+    site 				 =  db.StringField()
+    cluster              =  db.StringField()
+    freeMemoryPercentage =  db.StringField()
+    modifiedDate         =  db.StringField(index=True )
+
+    @staticmethod
+    def get_schema():
+        schema_data =  {'idField':'_id','vms':{'_id': 'id','vm_name':'VM Name','owner': 'VM Custodian','ip': 'IP','host': 'Host','connectionState':'Connected','powerState': 'Power','maxCpuUsage':'Maximum CPU','maxMemoryUsage': 'Maximum Memory','os_name': 'Operating System','disk_summary':'Disk Summary','dns_name': 'Domain Name','datastores': 'Datastores','disks':'Disks','nics': 'Nics','port_groups': 'Port Groups','vm_is_tempate': 'Template','vmPathName':'VMX FilePath','memorySizeMB':'Memory (MB)','cpuReservation':'CPU Reservation','memoryReservation': 'Memory Reservation','numCpu': 'CPU Count','numEthernetCards':'Ethernet Count','numVirtualDisks': 'Disk Count','site':'Site','vcenter':'VCenter','cluster': 'Cluster','modifiedDate': 'Modified Date'},'sc':0,'order': ['_id','vm_name','owner','ip','host','connectionState','powerState','maxCpuUsage','maxMemoryUsage','os_name','disk_summary','dns_name','datastores','disks','nics','port_groups','vm_is_tempate','vmPathName','memorySizeMB','cpuReservation','memoryReservation','numCpu','numEthernetCards','numVirtualDisks','site','vcenter','cluster','modifiedDate']}
+        return schema_data
+
+    @staticmethod
+    def get_record_count():
+        return VMs.objects().all().count()
+
+    @staticmethod
+    def get_last_record_id():
+        return  int(VMs.objects().order_by('-_id').first()['id']) if  VMs.get_record_count()>0 else 0
