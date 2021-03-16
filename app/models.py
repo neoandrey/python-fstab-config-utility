@@ -13,6 +13,7 @@ import rq
 from app import db, login
 from app.search import add_to_index, remove_from_index, query_index
 from flask_mongoengine.wtf import model_form
+
 class SearchableMixin(object):
     @classmethod
     def search(cls, expression, page, per_page):
@@ -97,6 +98,7 @@ class Teams(PaginatedAPIMixin,db.Document):
     @staticmethod
     def get_last_record_id():
         return  int(Teams.objects().order_by('-_id').first()['id']) if  Teams.get_record_count()>0 else 0
+
 
 class Roles(PaginatedAPIMixin,db.Document):
     id                =  db.IntField(primary_key=True)
@@ -240,8 +242,8 @@ class Sites(PaginatedAPIMixin,db.Document):
         
 class Vcenters(PaginatedAPIMixin, db.Document):
     id                  = db.IntField(primary_key=True)
-    name                = db.StringField(max_length = (255),index=True )
-    ipAddress           = db.StringField(max_length = (16), index=True )
+    name                = db.StringField(max_length = (255),unique=True,index=True )
+    ipAddress           = db.StringField(max_length = (16),unique=True, index=True )
     version             = db.StringField(max_length = (20))
     username            = db.StringField(max_length = (255), index=True)
     password            = db.StringField()
@@ -263,7 +265,7 @@ class Vcenters(PaginatedAPIMixin, db.Document):
         return Vcenters.objects().all().count()
     @staticmethod
     def get_last_record_id():
-        return  int(Vcenters.objects().order_by('-_id').first()['id']) if  VCenters.get_record_count()>0 else 0
+        return  int(Vcenters.objects().order_by('-_id').first()['id']) if  Vcenters.get_record_count()>0 else 0
 
 class Tasks(db.Document):
     id          = db.IntField(primary_key=True)
@@ -290,6 +292,7 @@ class Tasks(db.Document):
     def get_progress(self):
         job = self.get_rq_job()
         return job.meta.get('progress', 0) if job is not None else 100
+
 class AuditTrail(PaginatedAPIMixin,db.Document):
     id                  =  db.IntField(primary_key=True)
     description         =  db.StringField(max_length = (500))
@@ -362,7 +365,7 @@ class Images(PaginatedAPIMixin,db.Document):
     @staticmethod
     def get_last_record_id():
         return  int(Images.objects().order_by('-_id').first()['id']) if  Images.get_record_count()>0 else 0
-
+        
 class Sites(PaginatedAPIMixin,db.Document):
     id                  =  db.IntField(primary_key=True)
     siteName            =  db.StringField(index=True, unique=True)
@@ -471,7 +474,7 @@ class Hosts(PaginatedAPIMixin,db.Document):
     def get_last_record_id():
         return  int(Hosts.objects().order_by('-_id').first()['id']) if  Hosts.get_record_count()>0 else 0
 
-class VMs(PaginatedAPIMixin,db.Document):
+class vms(PaginatedAPIMixin,db.Document):
     id                   =  db.IntField(primary_key=True)
     vm_name              =  db.StringField(index=True )
     owner                =  db.StringField( index=True )
@@ -481,12 +484,14 @@ class VMs(PaginatedAPIMixin,db.Document):
     connectionState      =  db.StringField()
     powerState           =  db.StringField()
     maxCpuUsage          =  db.StringField()
-    memoryUsage          =  db.LongField()
+    maxMemoryUsage       =  db.LongField()
     os_name              =  db.StringField( index=True )
+    disks                =  db.ListField(db.DictField())
     disk_summary         =  db.ListField(db.DictField())
+    nics                =  db.ListField(db.DictField())
     dns_name		     =  db.StringField()
     datastores           =  db.ListField(db.StringField())
-    ports_groups         =  db.ListField(db.DictField())
+    port_groups         =  db.ListField(db.DictField())
     site                 =  db.StringField()
     vm_is_tempate        =  db.BooleanField( index=True )
     vmPathName           =  db.StringField()
@@ -504,13 +509,13 @@ class VMs(PaginatedAPIMixin,db.Document):
 
     @staticmethod
     def get_schema():
-        schema_data =  {'idField':'_id','vms':{'_id': 'id','vm_name':'VM Name','owner': 'VM Custodian','ip': 'IP','host': 'Host','connectionState':'Connected','powerState': 'Power','maxCpuUsage':'Maximum CPU','maxMemoryUsage': 'Maximum Memory','os_name': 'Operating System','disk_summary':'Disk Summary','dns_name': 'Domain Name','datastores': 'Datastores','disks':'Disks','nics': 'Nics','port_groups': 'Port Groups','vm_is_tempate': 'Template','vmPathName':'VMX FilePath','memorySizeMB':'Memory (MB)','cpuReservation':'CPU Reservation','memoryReservation': 'Memory Reservation','numCpu': 'CPU Count','numEthernetCards':'Ethernet Count','numVirtualDisks': 'Disk Count','site':'Site','vcenter':'VCenter','cluster': 'Cluster','modifiedDate': 'Modified Date'},'sc':0,'order': ['_id','vm_name','owner','ip','host','connectionState','powerState','maxCpuUsage','maxMemoryUsage','os_name','disk_summary','dns_name','datastores','disks','nics','port_groups','vm_is_tempate','vmPathName','memorySizeMB','cpuReservation','memoryReservation','numCpu','numEthernetCards','numVirtualDisks','site','vcenter','cluster','modifiedDate']}
+        schema_data =  {'idField':'_id','vms':{'_id': 'id','vm_name':'VM Name','owner': 'VM Custodian','ip': 'IP','host': 'Host','connectionState':'Connected','powerState': 'Power','maxCpuUsage':'Maximum CPU','maxMemoryUsage': 'Maximum Memory','os_name': 'Operating System','disk':'Disks','nics':'NICs','dns_name': 'Domain Name','datastores': 'Datastores','disks':'Disks','nics': 'Nics','port_groups': 'Port Groups','vm_is_tempate': 'Template','vmPathName':'VMX FilePath','memorySizeMB':'Memory (MB)','cpuReservation':'CPU Reservation','memoryReservation': 'Memory Reservation','numCpu': 'CPU Count','numEthernetCards':'Ethernet Count','numVirtualDisks': 'Disk Count','site':'Site','vcenter':'VCenter','cluster': 'Cluster','modifiedDate': 'Modified Date','disk_summary':'Disk Summary'},'sc':0,'order': ['_id','vm_name','owner','ip','host','connectionState','powerState','maxCpuUsage','maxMemoryUsage','os_name','disks','nics','dns_name','datastores','disks','disk_summary','nics','port_groups','vm_is_tempate','vmPathName','memorySizeMB','cpuReservation','memoryReservation','numCpu','numEthernetCards','numVirtualDisks','site','vcenter','cluster','modifiedDate']}
         return schema_data
 
     @staticmethod
     def get_record_count():
-        return VMs.objects().all().count()
+        return vms.objects().all().count()
 
     @staticmethod
     def get_last_record_id():
-        return  int(VMs.objects().order_by('-_id').first()['id']) if  VMs.get_record_count()>0 else 0
+        return  int(vms.objects().order_by('-_id').first()['id']) if  vms.get_record_count()>0 else 0

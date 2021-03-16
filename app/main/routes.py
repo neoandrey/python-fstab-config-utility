@@ -7,7 +7,7 @@ from flask_babel import _, get_locale
 #from guess_language import guess_language
 from app import db, moment
 from app.main.forms import LoginForm,VCenterForm #, EditProfileForm, EmptyForm, PostForm, SearchForm, MessageForm
-from app.models import Users, Teams, Roles, Vcenters, AuditTrail, SiteSettings,Images,VMs,Datastores,Clusters, Hosts #, Post, Message, Notification
+from app.models import Users, Teams, Roles, Vcenters, AuditTrail, SiteSettings,Images,vms,Datastores,Clusters, Hosts,Sites #, Post, Message, Notification
 #from app.translate import translate
 from app.main import bp
 import traceback, json
@@ -21,6 +21,25 @@ from PIL import Image,ImageEnhance
 #        db.session.commit()
 ##        g.search_form = SearchForm()
 #    g.locale = str(get_locale())
+
+
+@bp.route('/main/dataselect', methods=['GET'])
+@bp.route('/dataselect',methods=['GET'] )
+@login_required
+def get_data_for_select():
+    model              =  request.args.get('c').lower()
+    key_field          =  request.args.get('k').lower()
+    value_field        =  request.args.get('v').lower()	
+    record_list        =  []
+    data_count         =  0 
+
+    print('model: {}'.format(model))
+    print('key_field: {}'.format(key_field))
+    print('value_field: {}'.format(value_field))
+    if model == 'sites':
+        all_records = Sites.objects.all()
+        data_count  = (Sites.get_record_count())
+    return jsonify({'tabData':all_records,'dataCount':data_count})  
 
 @bp.route('/main/images', methods=['GET', 'POST'])
 @bp.route('/images', methods=['GET', 'POST'])
@@ -151,8 +170,6 @@ def getSchema():
     elif model == 'clusters':
         return jsonify(Clusters.get_schema())
 
-
-
 @bp.route('/main/data', methods=['GET', 'POST'])
 @bp.route('/data', methods=['GET', 'POST'])
 @login_required
@@ -241,6 +258,7 @@ def process_data_request():
                             port             =  request.form['pl[port]'],
                             productLine      =  request.form['pl[productline]'],
                             creationDate     =  request.form['pl[creationdate]'],
+                            site             =  request.form['pl[site]'],
                             lastModifiedDate =  request.form['pl[lastmodifieddate]'],
                             active           = True if str(request.form['pl[active]']).lower()== 'yes' else False)
                             vcenter.save()
@@ -321,6 +339,7 @@ def process_data_request():
                             set__serviceUri         =  request.form['pl[serviceuri]'],
                             set__port               =  int(request.form['pl[port]'].strip()),
                             set__productLine        =  request.form['pl[productline]'],
+                            set__site               =  request.form['pl[site]'],
                             set__lastModifiedDate   =  datetime.utcnow(),
                             set__active             =  True if str(request.form['pl[active]']).lower()== 'yes' else False               
                             )
@@ -360,12 +379,11 @@ def process_data_request():
                             response['model']        = 'SiteSettings'
                             response['header']       = 'SiteSettings Update'
                             response['error']        = None
-                            response['record_index'] = query_fields['_id']
-                        return  jsonify(response)   
-                        elif (model =='sites'):
+                            response['record_index'] = query_fields['_id'] 
+                        elif(model =='sites'):
                             siteSettings      		 =  Sites.objects(__raw__=query_fields).update( 
                             set__siteName            =  request.form['pl[sitename]'],
-							set__lastModifiedDate    =  request.form['pl[lastmodifieddate]']							
+                            set__lastModifiedDate    =  request.form['pl[lastmodifieddate]']							
                             )
                             response['message']      = 'The details of the \'{}\' have been successfully updated'.format(request.form['pl[sitename]'])
                             response['isSuccessful'] = True
@@ -394,8 +412,7 @@ def process_data_request():
                             response['model']        = 'Teams'
                             response['header']       = 'Teams Record Removal'
                             response['error']        = None
-                            response['record_index'] = record_index
-                        return  jsonify(response)           
+                            response['record_index'] = record_index          
                         elif (model =='sites'):
                             team   = Sites.objects(__raw__=query_fields).first()
                             team.delete()
@@ -452,11 +469,12 @@ def process_data_request():
                         return jsonify({'columns':(Images.get_schema())[model],'tabData':image_record,'dataCount':(Images.get_record_count())})                
                 elif model =='vms':
                     if action=='sel' and display_format=='form':
-                        results         = VMs.objects(__raw__=query_fields).first() if  query_fields is not None else []
-                        return  jsonify({'columns':(VMs.get_schema())[model],'tabData':results,'dataCount':1 })
+                        results         = vms.objects(__raw__=query_fields).first() if  query_fields is not None else []
+                        return  jsonify({'columns':(vms.get_schema())[model],'tabData':results,'dataCount':1 })
                     elif action=='sel' and display_format=='table' :
-                        image_record = VMs.objects.all()
-                        return jsonify({'columns':(VMs.get_schema())[model],'tabData':image_record,'dataCount':(VMs.get_record_count())})              
+                        image_record = vms.objects.all()
+                        print(image_record)
+                        return jsonify({'columns':(vms.get_schema())[model],'tabData':image_record,'dataCount':(vms.get_record_count())})              
                 elif model =='sites':
                     if action=='sel' and display_format=='form':
                         results         = Sites.objects(__raw__=query_fields).first() if  query_fields is not None else []
@@ -545,8 +563,9 @@ def index():
     opts['siteName']    =  'CSAM'
     opts['userName']    =  None
     opts['previousDest']=  None
+    opts['currentUser'] =  current_user.username
     opts['currentTime'] =  datetime.utcnow()
-    opts['siteTitle']   =   'Compute and Storage Self-Service Platform (CS3P)'
+    opts['siteTitle']   =  'Compute and Storage Self-Service Platform (CS3P)'
     return render_template('index.html', title='Dashboard',pageID='dashboard',options=opts)
 
 """

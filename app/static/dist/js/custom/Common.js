@@ -1,87 +1,132 @@
+var databaseName = "cs3p";
+
+$.fn.removeOptionsFromHeader = function() {
+    if ($('#item-options-div')) { $('#item-options-div').remove(); }
+
+}
+
+$.fn.addOptionsToHeader = function() {
+    $('#page-nav-header').append('<li id="item-options-div"> <a href="#" id="item-options">options</a></li>');
+}
+
+$.fn.getListForSelect = async function(collection, keyField, valueField, callback) {
+
+    var resData = {};
+    let query = {};
+    let selectedFields = {}
+    let chosenValue = null;
+    let rData = {};
+
+    let pData = new Promise(function(resolve, reject) {
+        $.fn.runGet('/main/dataselect', { c: collection, k: keyField, v: valueField }, function(data) {
+            console.dir(data)
+            if (data) {
+                let selectData = data && $.fn.getObjectType(data) != "object" ? JSON.parse(data) : data;
+                let dataCount = selectData['dataCount'] ? parseInt(selectData['dataCount']) : 0;
+                let selectedFields = []
+                for (let i = 0; i < data.tabData.length; i++) {
+                    let temp = {}
+                    let selectEntry = data.tabData[i]
+                    let record = selectEntry[valueField];
+                    let idField = selectEntry[keyField];
+                    temp[idField] = record
+                    selectedFields.push(temp);
+                }
+                resolve(selectedFields);
+            } else {
+                reject([]);
+            }
+        });
+    });
+    rData = await pData;
+    callback(rData)
+}
+
+
 
 function compareNames(a, b) {
     // Use toUpperCase() to ignore character casing
     const bandA = a.name.toLowerCase();
     const bandB = b.name.toLowerCase();
-  
+
     let comparison = 0;
     if (bandA > bandB) {
-      comparison = 1;
+        comparison = 1;
     } else if (bandA < bandB) {
-      comparison = -1;
+        comparison = -1;
     }
     return comparison;
-  }
+}
 
-  
-function getImageDimensions(imageType){
-   let  imageDimensions = {width:50,height:50}
-   imageType = imageType.toLowerCase()
-    console.log('imageType: '+imageType)
 
-   switch(imageType){
+function getImageDimensions(imageType) {
+    let imageDimensions = { width: 50, height: 50 }
+    imageType = imageType.toLowerCase()
+    console.log('imageType: ' + imageType)
 
-      case 'sitelogo':
-            imageDimensions.width  = 120;
-            imageDimensions.height = 120;       
-      break;
-      case 'offercampaign':
-        imageDimensions.width  = 500;
-        imageDimensions.height = 500;       
-        break;
-      case 'clients':
-            imageDimensions.width  = 360;
-            imageDimensions.height = 360;       
-      break;
-      case 'sitesettings':
-            imageDimensions.width  = 315;
-            imageDimensions.height = 85;       
-      break;
-      case 'slideritem':
-            imageDimensions.width  = 1920;
-            imageDimensions.height = 1001;       
-      break;
-      case 'banner':
-        imageDimensions.width  = 1920;
-        imageDimensions.height = 1001;       
-        break;
-    case 'products':
-        imageDimensions.width  = 370;
-        imageDimensions.height = 350;       
-        break;
-   }
+    switch (imageType) {
 
-  return  imageDimensions;
+        case 'sitelogo':
+            imageDimensions.width = 120;
+            imageDimensions.height = 120;
+            break;
+        case 'offercampaign':
+            imageDimensions.width = 500;
+            imageDimensions.height = 500;
+            break;
+        case 'clients':
+            imageDimensions.width = 360;
+            imageDimensions.height = 360;
+            break;
+        case 'sitesettings':
+            imageDimensions.width = 315;
+            imageDimensions.height = 85;
+            break;
+        case 'slideritem':
+            imageDimensions.width = 1920;
+            imageDimensions.height = 1001;
+            break;
+        case 'banner':
+            imageDimensions.width = 1920;
+            imageDimensions.height = 1001;
+            break;
+        case 'products':
+            imageDimensions.width = 370;
+            imageDimensions.height = 350;
+            break;
+    }
+
+    return imageDimensions;
 
 }
 
 
- $.fn.getObjectType=function(object) {
-    var stringConstructor  = "test".constructor;
-    var arrayConstructor   = [].constructor;
-    var objectConstructor  = ({}).constructor;
+$.fn.getObjectType = function(object) {
+    var stringConstructor = "test".constructor;
+    var arrayConstructor = [].constructor;
+    var objectConstructor = ({}).constructor;
     var booleanConstructor = true.constructor;
     if (object === null) {
         return "null";
-    }else  if (object === undefined) {
+    } else if (object === undefined) {
         return "undefined";
-    }else if (object.constructor === stringConstructor) {
+    } else if (object.constructor === stringConstructor) {
         return "string";
-    }else if (object.constructor === arrayConstructor) {
+    } else if (object.constructor === arrayConstructor) {
         return "array";
-    }else if (object.constructor === objectConstructor) {
+    } else if (object.constructor === objectConstructor) {
         return "object";
-    }else if (object.constructor === booleanConstructor) {
+    } else if (object.constructor === booleanConstructor) {
         return "boolean";
-    }else if ((typeof object).toLowerCase() == 'function') {
+    } else if ((typeof object).toLowerCase() == 'function') {
         return "function";
-    }else if ((typeof object).toLowerCase() == 'number') {
+    } else if ((typeof object).toLowerCase() == 'number') {
         return "number";
-    }else if ((typeof object).toLowerCase() == 'bigint') {
+    } else if ((typeof object).toLowerCase() == 'bigint') {
         return "bigint";
-    }else if ((typeof object).toLowerCase() == 'symbol') {
+    } else if ((typeof object).toLowerCase() == 'symbol') {
         return "symbol";
-    }else{
+    } else {
         return "unknown";
     }
 }
@@ -89,80 +134,88 @@ function getImageDimensions(imageType){
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
-  }
-  
- Object.assign(String.prototype, {
-  equalsIgnoreCase(b) {
-    // Use toUpperCase() to ignore character casing
-    a = this;
-    const bandA = a.name.toLowerCase();
-    const bandB = b.name.toLowerCase();
-  
-    let comparison = 0;
-    if (bandA > bandB) {
-      comparison = 1;
-    } else if (bandA < bandB) {
-      comparison = -1;
+}
+
+
+Object.assign(String.prototype, {
+    equalsIgnoreCase(b) {
+        // Use toUpperCase() to ignore character casing
+        a = this;
+        const bandA = a.name.toLowerCase();
+        const bandB = b.name.toLowerCase();
+
+        let comparison = 0;
+        if (bandA > bandB) {
+            comparison = 1;
+        } else if (bandA < bandB) {
+            comparison = -1;
+        }
+        return comparison;
+    },
+replaceAll (find, replace) {
+    let string = this;
+    return string.replace(new RegExp(escapeRegExp(find), 'g'), replace);
+}
+}
+
+
+);
+
+
+function runIndexedDBQuery(options, callback) {
+
+    var currentDB = options.db ? options.db : databaseName
+    var queryType = options.queryType ? options.queryType : "get"
+    var storeType = options.storeType ? options.storeType : "string"
+    var data = options.data ? options.data : ""
+    var db = {}
+    var transaction = {}
+    var stringStore = {}
+    var objectDataStore = {}
+
+    var stringStoreStr = "stringStore"
+    var objectDataStr = "objDataStore"
+    if (!window.indexedDB) {
+        window.indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
     }
-    return comparison;
-       }
-  });
-
-
- function runIndexedDBQuery (options, callback){
-
-    var currentDB    	 =  options.db?options.db:"csam"
-    var queryType    	 =  options.queryType?options.queryType: "get" 
-    var storeType    	 =  options.storeType?options.storeType:"string"
-    var data         	 =  options.data? options.data:""
-	var db           	 =  {}
-	var transaction  	 =  {}
-	var stringStore  	 =  {}
-	var objectDataStore  =  {}
-    
-    var stringStoreStr   = "stringStore"
-    var objectDataStr    = "objDataStore"
-	if (!window.indexedDB) {
-		window.indexedDB = window.indexedDB || window.mozIndexedDB || window.webkitIndexedDB || window.msIndexedDB;
-	 }
-	window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction || {READ_WRITE: "readwrite"}; // This line should only be needed if it is needed to support the object's constants for older browsers
+    window.IDBTransaction = window.IDBTransaction || window.webkitIDBTransaction || window.msIDBTransaction || { READ_WRITE: "readwrite" }; // This line should only be needed if it is needed to support the object's constants for older browsers
     window.IDBKeyRange = window.IDBKeyRange || window.webkitIDBKeyRange || window.msIDBKeyRange;
 
     if (!window.indexedDB) {
         console.log("IndexedDB Error: Your browser doesn't support a stable version of IndexedDB. Such and such feature will not be available.");
     }
-    
-   var dbExists = false;
-   var request =   window.indexedDB.open(currentDB, 7);
-   
-      request.onupgradeneeded = function(event) {
+
+    var dbExists = false;
+    var request = window.indexedDB.open(currentDB, 7);
+
+    request.onupgradeneeded = function(event) {
         db = event.target.result;
         db.onerror = function(event) {
             console.error("IndexedDB Error: " + JSON.stringify(event.target));
             dbExists = true
         };
-        var stringStore   = null;
-        var objDataStore  = null;
+        var stringStore = null;
+        var objDataStore = null;
 
-        if(dbExists){
-            try{
+        if (dbExists) {
+            try {
                 db.deleteObjectStore(stringStoreStr)
                 db.deleteObjectStore(objectDataStr)
-            }catch(e){
+            } catch (e) {
                 console.log(e.stack)
             }
 
         }
-        stringStore  = db.createObjectStore(stringStoreStr, { keyPath: "name" });
+        stringStore = db.createObjectStore(stringStoreStr, { keyPath: "name" });
         stringStore.createIndex("name", "name", { unique: true });
         objDataStore = db.createObjectStore(objectDataStr, { keyPath: "name" });
         objDataStore.createIndex("name", "name", { unique: true });
         console.log('object stores created successfully');
-        if(callback) callback(null)
+        if (callback) callback(null)
     };
     request.onerror = function(event) {
-        console.log("IndexedDB Error: "+ event.target.errorCode);
-        if(callback)callback(null)
+        console.log("IndexedDB Error: " + event.target.errorCode);
+        if (callback) callback(null)
     };
     request.onsuccess = function(event) {
         db = event.target.result;
@@ -170,73 +223,73 @@ function sleep(ms) {
             console.error("IndexedDB Error: " + event.target.errorCode);
         };
 
-        transaction       = db.transaction(db.objectStoreNames,"readwrite");
-        stringStore       = transaction.objectStore(stringStoreStr);
-        objectDataStore   = transaction.objectStore(objectDataStr);
+        transaction = db.transaction(db.objectStoreNames, "readwrite");
+        stringStore = transaction.objectStore(stringStoreStr);
+        objectDataStore = transaction.objectStore(objectDataStr);
 
-        if(queryType.toLowerCase() =='put'){
-            if(data && data.name){
-                if(storeType=="string"){
-                
-                    stringStore.put({name: data.name,data:data});
-                
-                }else  if (storeType=="object"){
-            
-                        objectDataStore.put({name: data.name,data:data});
-                    
+        if (queryType.toLowerCase() == 'put') {
+            if (data && data.name) {
+                if (storeType == "string") {
+
+                    stringStore.put({ name: data.name, data: data });
+
+                } else if (storeType == "object") {
+
+                    objectDataStore.put({ name: data.name, data: data });
+
                 }
             }
-        }else  if(queryType.toLowerCase() == 'get'){
-            let  query = {}
-            if(storeType=="string"){
-                
+        } else if (queryType.toLowerCase() == 'get') {
+            let query = {}
+            if (storeType == "string") {
+
                 query = stringStore.get(data);
-            }else  if (storeType=="object"){
-                query =   objectDataStore.get(data);
+            } else if (storeType == "object") {
+                query = objectDataStore.get(data);
             }
-            query.onsuccess = function(){
+            query.onsuccess = function() {
                 let getData = query.result;
 
-                if(!getData){
-                    if(callback)  callback(null)
+                if (!getData) {
+                    if (callback) callback(null)
                     return
-                    
-                } else if(getData && getData.data && getData.data.data){
-                    if(callback)  callback(getData.data.data);
-                    return
-                    
-                }   
-            }
-        } else  if(queryType.toLowerCase() =='del'){
 
-            if(storeType=="string"){
+                } else if (getData && getData.data && getData.data.data) {
+                    if (callback) callback(getData.data.data);
+                    return
+
+                }
+            }
+        } else if (queryType.toLowerCase() == 'del') {
+
+            if (storeType == "string") {
                 stringStore.delete(data.name);
-            }else  if (storeType=="object"){
-                 objectDataStore.delete(data.name);
+            } else if (storeType == "object") {
+                objectDataStore.delete(data.name);
             }
         }
-            transaction.oncomplete = function(){
-                db.close();
-                return true;
-           }
+        transaction.oncomplete = function() {
+            db.close();
+            return true;
+        }
 
-    
+
     };
 
 }
 
- $.fn.sessionSet =function (srcName, srcData){
-     let       rawData  = {name:srcName,data:srcData }
-     return     runIndexedDBQuery({db:"csam", queryType:"put",storeType: "string" , data:rawData });
+$.fn.sessionSet = function(srcName, srcData) {
+    let rawData = { name: srcName, data: srcData }
+    return runIndexedDBQuery({ db: databaseName, queryType: "put", storeType: "string", data: rawData });
 }
- $.fn.sessionGet =  function(name, callback){
-       runIndexedDBQuery({db:"csam", queryType:"get",storeType: "string", data:name },callback)    
+$.fn.sessionGet = function(name, callback) {
+    runIndexedDBQuery({ db: databaseName, queryType: "get", storeType: "string", data: name }, callback)
 }
 
-$.fn.sessionRemove = function (srcName){
+$.fn.sessionRemove = function(srcName) {
 
-    let       rawData  = {name:srcName }
-    return     runIndexedDBQuery({db:"csam", queryType:"del",storeType: "string" , data:rawData });
+    let rawData = { name: srcName }
+    return runIndexedDBQuery({ db: databaseName, queryType: "del", storeType: "string", data: rawData });
 
 }
 
@@ -246,178 +299,180 @@ function escapeRegExp(string) {
     return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
 }
 
- $.fn.replaceAll= function(string, find, replace) {
+$.fn.replaceAll = function(string, find, replace) {
     return string.replace(new RegExp(escapeRegExp(find), 'g'), replace);
 }
 
-function convertToURLQuery(qObject){
-	 let queryStr   = [];
-	 for (var index in qObject){
-		 
-		 queryStr.push(index);
-		 queryStr.push("=");
-		 queryStr.push(qObject[index]);
-		 queryStr.push("&");
-	 }
-	 
-	 return queryStr.join("").slice(0,-1)
+function convertToURLQuery(qObject) {
+    let queryStr = [];
+    for (var index in qObject) {
+
+        queryStr.push(index);
+        queryStr.push("=");
+        queryStr.push(qObject[index]);
+        queryStr.push("&");
+    }
+
+    return queryStr.join("").slice(0, -1)
 }
 
- $.fn.convertURLQueryToObject = function(queryString){
-    let queryObj    = {};
-    let  tempQuery  =  queryString.split('&')
-    for (let i=0;  i<tempQuery.length; i++){
+$.fn.convertURLQueryToObject = function(queryString) {
+    let queryObj = {};
+    let tempQuery = queryString.split('&')
+    for (let i = 0; i < tempQuery.length; i++) {
         let queryMap = tempQuery[i].split('=');
         queryObj[queryMap[0]] = queryMap[1]
     }
-    
-    return queryObj  
+
+    return queryObj
 }
 
- $.fn.runPost = function(url, data,callback) {
-  
+$.fn.runPost = function(url, data, callback) {
+
     $.fn.showLoadingDialog('Updating information...');
     $.post(url, data).done(function(rawData) {
-            try {
+        try {
 
-                data = rawData  && $.fn.getObjectType(rawData)=="string"? JSON.parse(rawData):rawData;
-                callback(data)
-                $.fn.closeDialog()
-                
-            } catch (e) {
-                 console.log(e.stack);
-                 $.fn.showMessageDialog('<div align="center">Data Fetch Error</div>', '<div align = "center" color="red">Error fetching data</div>' + e.stack + '<br /><br />' + data);
-             }
+            data = rawData && $.fn.getObjectType(rawData) == "string" ? JSON.parse(rawData) : rawData;
+            callback(data)
+            $.fn.closeDialog()
 
-        });
+        } catch (e) {
+            console.log(e.stack);
+            $.fn.showMessageDialog('<div align="center">Data Fetch Error</div>', '<div align = "center" color="red">Error fetching data</div>' + e.stack + '<br /><br />' + data);
+        }
 
-}; 
+    });
 
-  $.fn.runGet = function (url, data,callback) {
-   let  isFetchingData = null; 
-        isFetchingData =$('#http-fetch-flag').val(); 
-       
-        if( (isFetchingData=="0" || isFetchingData=="") && data){
-                
-            $.get(url, data)
-                .done(function(rawData) {
-                    try {  
-                        $('#http-fetch-flag').val( "1"); 
-                        if(rawData)  {                  
-            
-                            data = (typeof rawData==='object')? rawData:JSON.parse(rawData);
-                            $('#http-fetch-flag').val( "0");                                 
-                            callback(data)
-                        }else {
+};
+
+$.fn.runGet = function(url, data, callback) {
+    let isFetchingData = null;
+    isFetchingData = $('#http-fetch-flag').val();
+
+    if ((isFetchingData == "0" || isFetchingData == "") && data) {
+
+        $.get(url, data)
+            .done(function(rawData) {
+                try {
+                    $('#http-fetch-flag').val("1");
+                    if (rawData) {
+
+                        data = (typeof rawData === 'object') ? rawData : JSON.parse(rawData);
+                        $('#http-fetch-flag').val("0");
+                        callback(data)
+                    } else {
                         callback({});
-                        }              
-                    } catch (e) {
-                        console.log(e.stack);
-                        $.fn.showMessageDialog('<div align="center">Data Fetch Error</div>', '<div align = "center" color="red">Error fetching data</div>' + e.stack + '<br /><br />' + data);
                     }
+                } catch (e) {
+                    console.log(e.stack);
+                    $.fn.showMessageDialog('<div align="center">Data Fetch Error</div>', '<div align = "center" color="red">Error fetching data</div>' + e.stack + '<br /><br />' + data);
+                }
 
-                });
-            }else{
-                callback({})
-            }   
+            });
+    } else {
+        callback({})
+    }
 }
-  $.fn.showAlert = function(message, alertType){
-       //primary,secondary,success, danger, warning, info, light, dark
-       message = $.fn.getObjectType(message)=="object"?JSON.stringify(message):message
-       message = message?'<div  class="alert alert-'+alertType+'" role="alert">'+message+'</div>':''
-       $.fn.showMessageDialog('<div>Alert Message</div>',message);
-  }
+$.fn.showAlert = function(message, alertType) {
+    //primary,secondary,success, danger, warning, info, light, dark
+    message = $.fn.getObjectType(message) == "object" ? JSON.stringify(message) : message
+    message = message ? '<div  class="alert alert-' + alertType + '" role="alert">' + message + '</div>' : ''
+    $.fn.showMessageDialog('<div>Alert Message</div>', message);
+}
 
-  $.fn.runSchemaGet = function(url, srcData,callback) {
-  let  tableName      =  srcData.qf
-  //console.log("$.fn.runSchemaGet_table: "+tableName)
-  let  tableSchema    =   tableName.toLowerCase()+"_schema";
-  let  resetFlag      =   tableName.toLowerCase()+"_reset_flag";
-  let  tableData      =   null;
-  let  isFetchingData =   null;
+$.fn.runSchemaGet = function(url, srcData, callback) {
+    let tableName = srcData.qf
+        //console.log("$.fn.runSchemaGet_table: "+tableName)
+    let tableSchema = tableName.toLowerCase() + "_schema";
+    let resetFlag = tableName.toLowerCase() + "_reset_flag";
+    let tableData = null;
+    let isFetchingData = null;
 
-  $.fn.sessionGet(resetFlag,  function(getData){
+    $.fn.sessionGet(resetFlag, function(getData) {
 
-    var resetFlag = getData;
-    $.fn.sessionGet(tableSchema,  function(getData){
-           
-            tableData =  $.fn.getObjectType(getData) == "string"? JSON.parse(getData):getData;
-            isFetchingData = $('#http-fetch-flag').val(); 
-            if (isFetchingData=="0"){
+        var resetFlag = getData;
+        $.fn.sessionGet(tableSchema, function(getData) {
 
-            if( !resetFlag || resetFlag=='null'||  (!tableData || (parseInt(resetFlag)==1) )){
-                
-                try { 
-                    //let data = JSON.stringinfy(srcData);
-                    $('#http-fetch-flag').val("1"); 
-                    $.ajax({
-                    async: false,
-                    cache: true,
-                    timeout: 300,
-                    type: 'GET',
-                    url: url,
-                    data: srcData,
-                    error: function(e) {
-                        $.fn.showAlert(e,'warning');
-                    },
-                    success: function(msg){ 
-                    // alert("success")
-                        }
-                
-                            })
-                
-                        .done(function(rawData) {
-                            try {
-                                if(rawData){
+            tableData = $.fn.getObjectType(getData) == "string" ? JSON.parse(getData) : getData;
+            isFetchingData = $('#http-fetch-flag').val();
+            if (isFetchingData == "0") {
 
-                                        $.fn.sessionSet(tableSchema, JSON.stringify(rawData)); 
-                                        $.fn.sessionSet(resetFlag, "0"); 
-                                        let data = rawData && $.fn.getObjectType(rawData)=="string" ? JSON.parse(rawData):rawData
-                                        $('#http-fetch-flag').val("0"); 
-                                        callback(data)
-                                }else {
-                                        callback({});
-                                }          
-                            } catch (e) {
-                                    console.log(e.stack);
-                                    $.fn.showMessageDialog('<div align="center">Data Fetch Error</div>', '<div align = "center" color="red">Error fetching data</div>' + e.stack + '<br /><br />' + JSON.stringify(srcData));
+                if (!resetFlag || resetFlag == 'null' || (!tableData || (parseInt(resetFlag) == 1))) {
+
+                    try {
+                        //let data = JSON.stringinfy(srcData);
+                        $('#http-fetch-flag').val("1");
+                        $.ajax({
+                            async: false,
+                            cache: true,
+                            timeout: 300,
+                            type: 'GET',
+                            url: url,
+                            data: srcData,
+                            error: function(e) {
+                                $.fn.showAlert(e, 'warning');
+                            },
+                            success: function(msg) {
+                                // alert("success")
                             }
 
                         })
-                } catch (e) {
-                    
-                    $.fn.showMessageDialog('<div align="center">Data Fetch Error</div>', '<div align = "center" color="red">Error fetching data</div>' + e.stack + '<br /><br />' +  JSON.stringify(srcData));
-                }
-            
-                }else {
+
+                        .done(function(rawData) {
+                            try {
+                                if (rawData) {
+
+                                    $.fn.sessionSet(tableSchema, JSON.stringify(rawData));
+                                    $.fn.sessionSet(resetFlag, "0");
+                                    let data = rawData && $.fn.getObjectType(rawData) == "string" ? JSON.parse(rawData) : rawData
+                                    $('#http-fetch-flag').val("0");
+                                    callback(data)
+                                } else {
+                                    callback({});
+                                }
+                            } catch (e) {
+                                console.log(e.stack);
+                                $.fn.showMessageDialog('<div align="center">Data Fetch Error</div>', '<div align = "center" color="red">Error fetching data</div>' + e.stack + '<br /><br />' + JSON.stringify(srcData));
+                            }
+
+                        })
+                    } catch (e) {
+
+                        $.fn.showMessageDialog('<div align="center">Data Fetch Error</div>', '<div align = "center" color="red">Error fetching data</div>' + e.stack + '<br /><br />' + JSON.stringify(srcData));
+                    }
+
+                } else {
                     callback(tableData);
                 }
-                        }else{
-                            $.fn.showMessageDialog('HTTP process is still  running')
+            } else {
+                $.fn.showMessageDialog('HTTP process is still  running')
 
-                        }
-        
+            }
+
         });
-});
+    });
 
 }
-    function runPost(url, data,callback) {
-        console.log('posting data: '+JSON.stringify(data))
-        $.post(url, data).done(function(rawData) {
-                try {
-    
-                    data = JSON.parse(rawData);
-                    callback(data)
-                    
-                } catch (e) {
-                     console.log(e.stack);
-                     $.fn.showMessageDialog('<div align="center">Data Fetch Error</div>', '<div align = "center" color="red">Error fetching data</div>' + e.stack + '<br /><br />' + data);
-                }
-    
-            });
-    
-    }
-function runImagePost(url, data,callback) {
+
+function runPost(url, data, callback) {
+    console.log('posting data: ' + JSON.stringify(data))
+    $.post(url, data).done(function(rawData) {
+        try {
+
+            data = JSON.parse(rawData);
+            callback(data)
+
+        } catch (e) {
+            console.log(e.stack);
+            $.fn.showMessageDialog('<div align="center">Data Fetch Error</div>', '<div align = "center" color="red">Error fetching data</div>' + e.stack + '<br /><br />' + data);
+        }
+
+    });
+
+}
+
+function runImagePost(url, data, callback) {
     $.ajax({
         url: url,
         data: data,
@@ -426,21 +481,21 @@ function runImagePost(url, data,callback) {
         processData: false,
         method: 'POST',
         type: 'POST', // For jQuery < 1.9
-        success: function(data){
-          // alert(data);
+        success: function(data) {
+            // alert(data);
         }
     }).done(function(rawData) {
-            try {
+        try {
 
-                data = $.fn.getObjectType(rawData)=="string"?JSON.parse(rawData):rawData;
-                callback(data)
-                
-            } catch (e) {
-                 console.log(e.stack);
-                 $.fn.showMessageDialog('<div align="center">Data Fetch Error</div>', '<div align = "center" color="red">Error fetching data</div>' + e.stack + '<br /><br />' + data);
-                       }
+            data = $.fn.getObjectType(rawData) == "string" ? JSON.parse(rawData) : rawData;
+            callback(data)
 
-        });
+        } catch (e) {
+            console.log(e.stack);
+            $.fn.showMessageDialog('<div align="center">Data Fetch Error</div>', '<div align = "center" color="red">Error fetching data</div>' + e.stack + '<br /><br />' + data);
+        }
+
+    });
 
 };
 
@@ -470,7 +525,7 @@ function renderImageTo(input, target) {
 
 }
 
-function yyyymmddhhmmss (previousDay) {
+function yyyymmddhhmmss(previousDay) {
     var newDate = new Date();
     var curDate = new Date();
     curDate.setDate(newDate.getDate() - previousDay);
@@ -489,44 +544,44 @@ function previousWeek() {
     return nextweek;
 }
 
-$.fn.closeDialog = function () {
+$.fn.closeDialog = function() {
     $('#myModal').modal('hide');
     $('#dialog-message-div').show()
     $('#dialog-bttns').html('');
     $('#myModal').modal('hide');
 }
-  $.fn.editDialog = function(header, message, bttns) {
+$.fn.editDialog = function(header, message, bttns) {
 
-    if(header) $('#dialog-header-span').html(header)
-    if(message)$('#dialog-message-div').html(message)
-    if(bttns) $('#dialog-bttns').bttns(bttns);
+    if (header) $('#dialog-header-span').html(header)
+    if (message) $('#dialog-message-div').html(message)
+    if (bttns) $('#dialog-bttns').bttns(bttns);
 }
 
-function showDialog (header) {
+function showDialog(header) {
     let modalOptions = {
-        keyboard: false
-        ,focus:true    
-        ,backdrop:'static'
+        keyboard: false,
+        focus: true,
+        backdrop: 'static'
 
     }
     var logo = $('#site-logo').val();
-    logo = '<span ><img src="' + logo + '" alt="'+$('#site-name').val()+'  Logo" /> <span>';
-    header = (header !== '' || header !== null) ? ('<table width="100%"><tr><td  cols="2">' + logo + '</td><td cols="10">' + header + '</td></tr></table>') : '<div >' + logo + ' '+name+' </div>';
+    logo = '<span ><img src="' + logo + '" alt="' + $('#site-name').val() + '  Logo" /> <span>';
+    header = (header !== '' || header !== null) ? ('<table width="100%"><tr><td  cols="2">' + logo + '</td><td cols="10">' + header + '</td></tr></table>') : '<div >' + logo + ' ' + name + ' </div>';
     $('#dialog-header-span').html(header);
     $('#dialog-header-span').css('text-align', 'center');
     $('#myModal').modal(modalOptions);
 }
- $.fn.showMessageDialog  =function(header, message) {
+$.fn.showMessageDialog = function(header, message) {
     let modalOptions = {
-        keyboard: false
-        ,focus:true    
-        ,backdrop:'static'
+        keyboard: false,
+        focus: true,
+        backdrop: 'static'
     }
     let logo = $('#site-logo').val();
     let name = $('#site-name').val()
-    logo = '<img src="' + logo + '" alt="'+name+'  Logo" />';
-    header = (header !== '' || header !== null) ? ('<table width="100%"><tr><td cols="2">' + logo + '</td><td cols="10">' + header + '</td></tr></table>') : '<div>' + logo + ' '+name+' </div>';
-    $('#dialog-header-span').html( header);
+    logo = '<img src="' + logo + '" alt="' + name + '  Logo" />';
+    header = (header !== '' || header !== null) ? ('<table width="100%"><tr><td cols="2">' + logo + '</td><td cols="10">' + header + '</td></tr></table>') : '<div>' + logo + ' ' + name + ' </div>';
+    $('#dialog-header-span').html(header);
     $('#dialog-message-div').html(message);
     $('#dialog-message-div').css('float', 'center');
     $('#dialog-message-div').css('text-align', 'center');
@@ -535,70 +590,71 @@ function showDialog (header) {
     $('#dialog-bttns').hide();
     $('#myModal').modal(modalOptions);
     $('#myModal').show();
-} 
-function showConfirmDialog  (header, message, callback) {
-    let modalOptions = {
-        keyboard: false
-        ,focus:true    
-        ,backdrop:'static'
-    }
-    let logo = $('#site-logo').val();
-    let name = $('#site-name').val();
-    $('#dialog-close-bttn').hide();
-    logo = '<img src="' + logo + '" alt="'+name+'  Logo" />';
-    header = (header !== '' || header !== null) ? ('<table width="100%"><tr><td  cols="2">' + logo + '</td><td cols="10">' + header + '</td></tr></table>') : '<div>' + logo + ' '+name+' </div>';
-    $('#dialog-header-span').html( header);
-    $('#dialog-message-div').html(message);
-    $('#dialog-message-div').css('float', 'center');
-    $('#dialog-message-div').css('text-align', 'center');
-    
-    $('#dialog-bttns').html('<button class="btn btn-large btn-danger btn-lg" onclick="$(\'#is-confirmed\').val(0); $.fn.closeDialog();" id="dialog-no-bttn">No</button><button class="btn btn-large btn-success btn-lg" onclick="$.fn.closeDialog(); '+callback+'; " id="dialog-yes-bttn">Yes</button>')
-    $('#dialog-bttns').show();
-    $('#dialog-close-bttn').hide();
-    $('#myModal').modal(modalOptions);
-    $('#myModal').show();
-} 
- $.fn.showDialogBeforeUpdate = function (header, message, callback) {
-    let modalOptions = {
-        keyboard: false
-        ,focus:true    
-        ,backdrop:'static'
-    }
-    let logo = $('#site-logo').val();
-    let name = $('#site-name').val();
-    $('#dialog-close-bttn').hide();
-    logo = '<img src="' + logo + '" alt="'+name+'  Logo" />';
-    header = (header !== '' || header !== null) ? ('<table width="100%"><tr><td  cols="2">' + logo + '</td><td cols="10">' + header + '</td></tr></table>') : '<div>' + logo + ' '+name+' </div>';
-    $('#dialog-header-span').html( header);
-    $('#dialog-message-div').html(message);
-    $('#dialog-message-div').css('float', 'center');
-    $('#dialog-message-div').css('text-align', 'center');
-    
-    $('#dialog-bttns').html('<button class="btn btn-large btn-success btn-lg" onclick="$.fn.closeDialog(); ('+callback+')(); " id="dialog-yes-bttn">OK</button>')
-    $('#dialog-bttns').show();
-    $('#dialog-close-bttn').hide();
-    $('#myModal').modal(modalOptions);
-    $('#myModal').show();
-} 
+}
 
-$.fn.showLoadingDialog = function (header) {
+function showConfirmDialog(header, message, callback) {
+    let modalOptions = {
+        keyboard: false,
+        focus: true,
+        backdrop: 'static'
+    }
+    let logo = $('#site-logo').val();
+    let name = $('#site-name').val();
+    $('#dialog-close-bttn').hide();
+    logo = '<img src="' + logo + '" alt="' + name + '  Logo" />';
+    header = (header !== '' || header !== null) ? ('<table width="100%"><tr><td  cols="2">' + logo + '</td><td cols="10">' + header + '</td></tr></table>') : '<div>' + logo + ' ' + name + ' </div>';
+    $('#dialog-header-span').html(header);
+    $('#dialog-message-div').html(message);
+    $('#dialog-message-div').css('float', 'center');
+    $('#dialog-message-div').css('text-align', 'center');
+
+    $('#dialog-bttns').html('<button class="btn btn-large btn-danger btn-lg" onclick="$(\'#is-confirmed\').val(0); $.fn.closeDialog();" id="dialog-no-bttn">No</button><button class="btn btn-large btn-success btn-lg" onclick="$.fn.closeDialog(); ' + callback + '; " id="dialog-yes-bttn">Yes</button>')
+    $('#dialog-bttns').show();
+    $('#dialog-close-bttn').hide();
+    $('#myModal').modal(modalOptions);
+    $('#myModal').show();
+}
+$.fn.showDialogBeforeUpdate = function(header, message, callback) {
+    let modalOptions = {
+        keyboard: false,
+        focus: true,
+        backdrop: 'static'
+    }
+    let logo = $('#site-logo').val();
+    let name = $('#site-name').val();
+    $('#dialog-close-bttn').hide();
+    logo = '<img src="' + logo + '" alt="' + name + '  Logo" />';
+    header = (header !== '' || header !== null) ? ('<table width="100%"><tr><td  cols="2">' + logo + '</td><td cols="10">' + header + '</td></tr></table>') : '<div>' + logo + ' ' + name + ' </div>';
+    $('#dialog-header-span').html(header);
+    $('#dialog-message-div').html(message);
+    $('#dialog-message-div').css('float', 'center');
+    $('#dialog-message-div').css('text-align', 'center');
+
+    $('#dialog-bttns').html('<button class="btn btn-large btn-success btn-lg" onclick="$.fn.closeDialog(); (' + callback + ')(); " id="dialog-yes-bttn">OK</button>')
+    $('#dialog-bttns').show();
+    $('#dialog-close-bttn').hide();
+    $('#myModal').modal(modalOptions);
+    $('#myModal').show();
+}
+
+$.fn.showLoadingDialog = function(header) {
     $('#dialog-message-div').html('<div align="center"><img src="static/images/ajax-loaders/ajax-loader-6.gif" title="ajax-loader"></div>');
     $('#dialog-message-div').show()
     $('#dialog-bttns').html('');
     $('#dialog-close-bttn').hide();
     showDialog(header);
 }
- $.fn.getDataFromID= function(tableName, data, idField, id, callback) {
+$.fn.getDataFromID = function(tableName, data, idField, id, callback) {
     console.log(tableName)
     console.log(data)
     console.log(idField)
     console.log(id)
     var filteredRecord = {}
-    if($.fn.getObjectType(data) ==  "array"){
-     filteredRecord = data.filter(function(itm) {
+    if ($.fn.getObjectType(data) == "array") {
+        filteredRecord = data.filter(function(itm) {
             return itm[idField] == id;
         });
-    }else{
+    } else {
 
         callback(data);
     }
@@ -619,7 +675,8 @@ function datePrevDaysfromNow(previousDay) {
     return "".concat(yyyy).concat("-").concat(mm).concat("-").concat(dd).concat(" ").concat(hh).concat(":").concat(min).concat(":").concat(ss);
 }
 
-function getDate() {
+
+$.fn.getDate =  function() {
     return datePrevDaysfromNow(0);
 }
  $.fn.addSpaceBeforeEachCapital =function(word){
@@ -627,7 +684,7 @@ function getDate() {
     return word.replace(/([a-z])([A-Z])/g, '$1 $2');
 }
 
-function addHyphenBeforeEachCapital (word){
+$.fn.addHyphenBeforeEachCapital =function(word){
 
     return word.replace(/([a-z])([A-Z])/g, '$1-$2');
 }
@@ -635,7 +692,6 @@ function addHyphenBeforeEachCapital (word){
   $.fn.capitalizeFirstLetter=function  (string) {
     return string.charAt(0).toUpperCase() + string.slice(1);
 };
-
 
 
 function isAlphabetic(field) {
@@ -664,8 +720,8 @@ function isValidPage(field) {
 
 }
 
-function isValidIPAddress(field){
-  var  ips = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
+function isValidIPAddress(field) {
+    var ips = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/
     if (field.match(ips)) {
         return true;
     } else {
@@ -787,7 +843,7 @@ function isValidEmailSet(field, name) {
 
     if (invalidAddresses.length !== 0) {
 
-        $.fn.showAlert('The list below shows the addresses in the \"' + name + '\" field which are not valid: \n ' + invalidAddresses,'danger');
+        $.fn.showAlert('The list below shows the addresses in the \"' + name + '\" field which are not valid: \n ' + invalidAddresses, 'danger');
         return false;
     } else {
 
@@ -848,59 +904,59 @@ function isValidDate(fld) {
 }
 
 
-function udpdatePageHeader (options){
+function udpdatePageHeader(options) {
     let header = `<div class="container-fluid">
             <div class="row mb-2">
             <div class="col-sm-6">
-                <h1>`+options.mainPage+`</h1>
+                <h1>` + options.mainPage + `</h1>
             </div>
             <div class="col-sm-6">
                 <ol class="breadcrumb float-sm-right">
-                <li class="breadcrumb-item"><a href="#">`+options.mainPage+`</a></li>
-                <li class="breadcrumb-item active">`+options.subPage+`</li>
+                <li class="breadcrumb-item"><a href="#">` + options.mainPage + `</a></li>
+                <li class="breadcrumb-item active">` + options.subPage + `</li>
                 </ol>
             </div>
             </div>
         </div>`
     $('#page-header').html(header);
-    
+
 }
 
-$.fn.showConfirmDialog =function(header, message, callback) {
+$.fn.showConfirmDialog = function(header, message, callback) {
     header = '<span align="center" style="font-weight:bold; font-size:20px;float: center;">' + header + '</span>';
     $('#dialog-message-div').html('<span>' + message + '</span>');
     //$('#submit-form-loader').hide();
-    $('#dialog-bttns').html('<div align="center"><button class="btn btn-large btn-danger btn-lg" onclick=" $.fn.closeDialog();" id="dialog-no-bttn">No</button><button class="btn btn-large btn-success btn-lg" onclick="'+callback+'" id="dialog-yes-bttn">Yes</button></div>');
+    $('#dialog-bttns').html('<div align="center"><button class="btn btn-large btn-danger btn-lg" onclick=" $.fn.closeDialog();" id="dialog-no-bttn">No</button><button class="btn btn-large btn-success btn-lg" onclick="' + callback + '" id="dialog-yes-bttn">Yes</button></div>');
     $('#dialog-bttns').show();
     let modalOptions = {
-        keyboard: false
-        ,focus:true    
-        ,backdrop:'static'
+        keyboard: false,
+        focus: true,
+        backdrop: 'static'
 
     }
     var logo = $('#site-logo').val();
-    logo = '<span ><img src="' + logo + '" alt="'+$('#site-name').val()+'  Logo" /> <span>';
-    header = (header !== '' || header !== null) ? ('<table width="100%"><tr><td  cols="2">' + logo + '</td><td cols="10">' + header + '</td></tr></table>') : '<div >' + logo + ' '+name+' </div>';
+    logo = '<span ><img src="' + logo + '" alt="' + $('#site-name').val() + '  Logo" /> <span>';
+    header = (header !== '' || header !== null) ? ('<table width="100%"><tr><td  cols="2">' + logo + '</td><td cols="10">' + header + '</td></tr></table>') : '<div >' + logo + ' ' + name + ' </div>';
     $('#dialog-header-span').html(header);
     $('#dialog-header-span').css('text-align', 'center');
     $('#dialog-close-bttn').hide()
     $('#myModal').modal(modalOptions);
 }
 
-$.fn.confirmFormSubmitDialog =function(header, message, id) {
+$.fn.confirmFormSubmitDialog = function(header, message, id) {
     header = '<span class="center-text" style="font-weight:bold; font-size:20px;float: center;">' + header + '</span>';
     $('#dialog-message-div').html('<strong>' + message + '</strong>');
     //$('#submit-form-loader').hide();
     $('#dialog-bttns').html('<div class="center-text"><button class="btn btn-large btn-danger btn-lg" onclick=" $.fn.closeDialog();" id="dialog-no-bttn">No</button><button class="btn btn-large btn-success btn-lg" onclick="$.fn.submitForm(\'' + id + '\',\'' + id + '_form_elements\')" id="dialog-yes-bttn">Yes</button></div>');
     $('#dialog-bttns').show();
     let modalOptions = {
-        keyboard: false
-        ,focus:true    
-        ,backdrop:'static'
-    }  
+        keyboard: false,
+        focus: true,
+        backdrop: 'static'
+    }
     var logo = $('#site-logo').val();
-    logo = '<span ><img src="' + logo + '" alt="'+$('#site-name').val()+'  Logo" /> <span>';
-    header = (header !== '' || header !== null) ? ('<table width="100%"><tr><td  cols="2">' + logo + '</td><td cols="10">' + header + '</td></tr></table>') : '<div >' + logo + ' '+name+' </div>';
+    logo = '<span ><img src="' + logo + '" alt="' + $('#site-name').val() + '  Logo" /> <span>';
+    header = (header !== '' || header !== null) ? ('<table width="100%"><tr><td  cols="2">' + logo + '</td><td cols="10">' + header + '</td></tr></table>') : '<div >' + logo + ' ' + name + ' </div>';
     $('#dialog-header-span').html(header);
     $('#dialog-close-bttn').hide();
     $('#dialog-header-span').css('text-align', 'center');
@@ -908,12 +964,13 @@ $.fn.confirmFormSubmitDialog =function(header, message, id) {
 };
 
 
-    function prepareFormElement  (elementOpts){
+
+$.fn.prepareFormElement = function (elementOpts){
         return  Object.assign(elementOpts, {
               name: elementOpts.name,
               type: elementOpts.type?elementOpts.type:'text',
               validation:  elementOpts.validation?elementOpts.validation:'alphanumspecial',
-              id: addHyphenBeforeEachCapital($.fn.capitalizeFirstLetter(elementOpts.name)),
+              id: $.fn.addHyphenBeforeEachCapital($.fn.capitalizeFirstLetter(elementOpts.name)),
               editable: elementOpts.editable?elementOpts.editable:false,
               value:  elementOpts.value?elementOpts.value:"",
               class: elementOpts.class?elementOpts.class:"input focused",
@@ -940,55 +997,55 @@ $.fn.ajaxFormSubmit = function(formTarget, formInputs, nextPage, callback) {
 
 
     if (isFormDataValid === 'YES') {
-      //  console.log("uri: "+formTarget);
+        //  console.log("uri: "+formTarget);
         console.log(formInputs)
-        if(formInputs['qf']){
+        if (formInputs['qf']) {
             let inputFields = formInputs['qf'].split(':');
-            for (let i=0; i<inputFields.length; i++ ){
-                  
-                if(i % 2== 0){
-                    let  original  =  inputFields[i]
-                    inputFields[i] =  inputFields[i].replaceAll(",","");
-                    inputFields[i] =  inputFields[i].replaceAll("'",'"');
-                    formInputs['qf'] = formInputs['qf'].replaceAll(original,inputFields[i])
+            for (let i = 0; i < inputFields.length; i++) {
+
+                if (i % 2 == 0) {
+                    let original = inputFields[i]
+                    inputFields[i] = inputFields[i].replaceAll(",", "");
+                    inputFields[i] = inputFields[i].replaceAll("'", '"');
+                    formInputs['qf'] = formInputs['qf'].replaceAll(original, inputFields[i])
                 }
             }
 
-            
+
         }
-        $.fn.runPost(formTarget,formInputs,function(response) {
-           
+        $.fn.runPost(formTarget, formInputs, function(response) {
+
             if (response) {
 
-                var respInt         = response.isSuccessful ? 1 : 0; // parseInt(response);
-                var siteName        = $('#site-name').val();
-                var message         = response.message;
-                var error           = response.error;
-                var collectionName  = response.model;
-                var headerStr       = response.header; // mode == 1 ? capitalizeFirstLetter(collectionName) + " Successfully Updated" : " 1 Item Successfully Added to " + collectionName;
+                var respInt = response.isSuccessful ? 1 : 0; // parseInt(response);
+                var siteName = $('#site-name').val();
+                var message = response.message;
+                var error = response.error;
+                var collectionName = response.model;
+                var headerStr = response.header; // mode == 1 ? capitalizeFirstLetter(collectionName) + " Successfully Updated" : " 1 Item Successfully Added to " + collectionName;
 
-                if(!error){
+                if (!error) {
 
-                    if (respInt === 1) { 
+                    if (respInt === 1) {
 
                         $.fn.sessionSet(collectionName + "_reset_flag", "1");
-                        $.fn.emit('datachanged', response);       
+                        $.fn.emit('datachanged', response);
 
-                        message = error? message+'<br /><div style="color:red">error: <br />'+error+'</div>':message;
+                        message = error ? message + '<br /><div style="color:red">error: <br />' + error + '</div>' : message;
                         //$.fn.showDialogBeforeUpdate (headerStr,message, '$.fn.updateCurrentTable()');
-                    // $.fn.showMessageDialog(headerStr,message);
+                        // $.fn.showMessageDialog(headerStr,message);
                         $('#submit-form-loader').hide();
-                     }
-                 } else{
+                    }
+                } else {
                     $('#submit-form-loader').hide();
-                    $.fn.showMessageDialog(headerStr,message);
-                    let  currentItem = $('#current-item').val().toLowerCase()
+                    $.fn.showMessageDialog(headerStr, message);
+                    let currentItem = $('#current-item').val().toLowerCase()
 
                 }
-        }
+            }
 
-        if(callback)callback();
-    });
+            if (callback) callback();
+        });
 
     }
 }

@@ -6,45 +6,110 @@ import Serializer from './Serializer.js';
 import FormValidator from './FormValidator.js';
 import Form from './Form.js';
 
- $.fn.drawSidebar = function() {
-
-  $.fn.sessionGet('sites', function(sites){
-	    $.fn.sessionGet('vcenters', function(vcenters){
-		    $.fn.sessionGet('clusters', function(clusters){
-                 alert()
-				 var  tree = [];
-				 sites.foreach(function(site){
+ $.fn.drawSidebar = function(callback) {
+var searchCriteria  = {}
+var tableName       = 'sites'
+var paramString     = 'c=' + tableName + '&qt=sel&qf=' + JSON.stringify(searchCriteria)+"&df=table";
+var tableUrl        = '/main/data'  
+$.fn.runGet(tableUrl ,paramString, function(data){
+        var sites = $.fn.getObjectType(data)=="string"?JSON.parse(data)['tabData']:data['tabData'];
+        tableName       = 'vcenters'
+        paramString     = 'c=' + tableName + '&qt=sel&qf=' + JSON.stringify(searchCriteria)+"&df=table";
+    $.fn.runGet(tableUrl ,paramString,  function(data){
+        var  vcenters = $.fn.getObjectType(data)=="string"?JSON.parse(data)['tabData']:data['tabData'];
+          tableName       = 'clusters'
+          paramString     = 'c=' + tableName + '&qt=sel&qf=' + JSON.stringify(searchCriteria)+"&df=table";   
+		  $.fn.runGet(tableUrl ,paramString,  function(data){
+             var    clusters = $.fn.getObjectType(data)=="string"?JSON.parse(data)['tabData']:data['tabData'];
+             tableName       = 'hosts'
+              paramString     = 'c=' + tableName + '&qt=sel&qf=' + JSON.stringify(searchCriteria)+"&df=table";   
+		      $.fn.runGet(tableUrl ,paramString,  function(data){
+                 var    hosts = $.fn.getObjectType(data)=="string"?JSON.parse(data)['tabData']:data['tabData'];
+                 tableName       = 'vms'
+                 paramString     = 'c=' + tableName + '&qt=sel&qf=' + JSON.stringify(searchCriteria)+"&df=table";   
+		         $.fn.runGet(tableUrl ,paramString,  function(data){
+                 var    vms = $.fn.getObjectType(data)=="string"?JSON.parse(data)['tabData']:data['tabData'];
+                 var  tree = [];
+				 for(let site of sites){
 				 var  vcenterList = [];
-				 vcenters.foreach(function(vcenter){
-					 let clusterList = [];
-					 clusters.forEach(function(cluster){
-						 if(cluster.vcenter == vcenter){
-								clusterList.push(cluster.name)
-						 }
-						 
-					 });
-					 let  id  = vcenter.name.toLowerCase()+'-id';
+
+                    let vcenterSubList = vcenters.filter(function(vcenter) {
+                        return vcenter.site.toLowerCase() == site.siteName.toLowerCase()
+                    });
+
+				  for(let vcenter of vcenterSubList){    
+
+                    let clusterSubList = clusters.filter(function(cluster) {
+                        return cluster.vcenter === vcenter.ipAddress
+                    });
+                    let clusterList = []
+				    for(let cluster of clusterSubList){
+                            
+                            let hostSubList = hosts.filter(function(host) {
+                                return host.cluster.toLowerCase() === cluster.name.toLowerCase();
+                            });
+                            let hostList = []
+
+                            for (let host of hostSubList){
+                                let vmSubList = vms.filter(function(vm) {
+                                    return vm.host.toLowerCase() === host.name.toLowerCase();
+                                });
+                                let vmList = []
+
+                                for(let vm of vmSubList){
+                                  let  id  = vm.id;
+                                  let vmObj ={
+                                        text: vm.vm_name.toUpperCase(),
+                                        icon: "fa fa-desktop",
+                                         id:  id
+                                    };
+                                    vmList.push(vmObj);
+                                }
+
+                                let  id  = host.id;
+                                let hostObj ={
+                                text: host.name,
+                                icon: "fa fa-server",
+                                id:  id,
+                                nodes: vmList
+                                }
+                                hostList.push(hostObj);
+                            }
+                          
+                            let  id  = cluster.id;
+                            let clusterObj ={
+                            text: cluster.name,
+                            icon: "fa fa-sitemap",
+                            id:  id,
+                            nodes: hostList
+                            }
+							clusterList.push(clusterObj);		 
+					 }
+                  
+					 let  id  = vcenter.id;
 					 let vcenterObj ={
 					   text: vcenter.name,
-					   icon: "fa fa-building-o",
+					   icon: "fa fa-cloud",
 					   id:  id,
 					   nodes: clusterList
-				  }
-				vcenterList.push(vcenterObj)
-				 });
-				 let  id  = site.name.toLowerCase()+'-id';
-				  let siteObj ={
+				      }
+				      vcenterList.push(vcenterObj)      
+				    
+                  }
+                 let siteObj = {}
+				 let  id  = site.id;
+				   siteObj ={
 					   text: site.siteName,
-					   icon: "fa fa-sitemap",
+					   icon: "fa fa-globe",
 					   id  :id,
 					   nodes: vcenterList
 				  }
+                
 				tree.push(siteObj) 
+			 }
+            callback(JSON.stringify(tree));
 			 });
-			alert(JSON.stringify(tree))
-            return JSON.stringify(tree);
-			
-	  
+          });
 			}); 				  
 		}); 
   });
@@ -322,72 +387,64 @@ $.fn.drawForm = function (options){
     }
     };
 
- $.fn.getFormElementList = function(opts) {
-       
-        let tableName           = opts.tableName
-        let cols                = opts.cols
-        let excludedCols        = opts.excludedCols
-        let recordInd           = opts.recordInd
-        let access              = opts.access
-        let callback            = opts.callback
-        let serialCount         = opts.serialCount
-        let  order              = opts.order
-        let  rawElementList     = [];
-        let  elementList        = [];
-        let  rawData            =   null;
-   
 
-        $.fn.sessionGet(tableName.toLowerCase(), function(getData){
-            rawData                 =  getData?getData:null;
-            let  responseData       =  $.fn.getObjectType(rawData)=="string"? JSON.parse(rawData):rawData;
+$.fn.getFormElementList = async function(opts) {
 
-            let  tableColumns       =  Object.keys(cols);
-            let  displayColumns     =  Object.values(cols);
-            let  tableData          =  (responseData && responseData.tabData) ? responseData.tabData :[];
-            let  pauseCallback      =  false;
+    let tableName       = opts.tableName
+    let cols            = opts.cols
+    let excludedCols    = opts.excludedCols
+    let recordInd       = opts.recordInd
+    let access          = opts.access
+    let callback        = opts.callback
+    let serialCount     = opts.serialCount
+    let order           = opts.order
+    let rawElementList  = [];
+    let elementList     = [];
+    let rawData         = null;
 
-            let  rowKey  = {}
-            let objKeys = rawData? Object.keys(rawData):0;
-            let dataKey = objKeys.length >1?objKeys[0]:objKeys
+    let tableColumns = Object.keys(cols);
+    let displayColumns = Object.values(cols);
+    let pauseCallback = false;
 
-            for (let i of tableColumns){
-                let  skipElement      =  false;
-                let formElement = {};
-                formElement['name']   =  i;
-                formElement['displayName']   =  displayColumns[i];
+    let rowKey = {}
+    let objKeys = rawData ? Object.keys(rawData) : 0;
+    let dataKey = objKeys.length > 1 ? objKeys[0] : objKeys
 
-              if(excludedCols.indexOf(formElement['name'].toLowerCase())<0){
-                    console.log(`key: ${dataKey}`)
-                   // console.log(tableData[dataKey][i]);
-                    formElement['value']    =  recordInd >0 && tableData[dataKey] &&  tableData[dataKey][i]? tableData[dataKey][i]:null;
-                    formElement['val']      =  formElement['value'];
-                    if(formElement['name'].toLowerCase().indexOf('password')> -1){
-                        formElement['info'] = serialCount
-                    }
-    
-                    let formData               =  $.fn.formatFormField(formElement,skipElement, pauseCallback, access);
-                    formElement                =  formData['formElement']
-                    skipElement                =  formData['skipElement']
-                    pauseCallback              =  formData['pauseCallback']
-                    formElement['isFormatted'] = true;
-                    if(!skipElement) rawElementList.push(new FormElement(prepareFormElement(formElement)));
-                }
+    for (let i of tableColumns) {
+
+        let skipElement = false;
+        let formElement = {};
+        formElement['name'] = i;
+        formElement['displayName'] = displayColumns[i];
+
+        if (excludedCols.indexOf(formElement['name'].toLowerCase()) < 0) {
+            formElement['value'] =  null;
+            formElement['val'] = null;
+            if (formElement['name'].toLowerCase().indexOf('password') > -1) {
+                formElement['info'] = serialCount
             }
-            rawElementList.map(function(x){ 
-                let index = order.indexOf(x.name);   
-                elementList[index]=x 
-            });
- 
-            // elementList.sort(compareNames);
-            console.dir(elementList)
-            
-           if(!pauseCallback) callback (elementList);
-      });    
-     }
 
-$.fn.formatFormField =  function(formElement, skipElement, pauseCallback, access){
+            formElement['isFormatted'] = false;
+
+            if (!skipElement) rawElementList.push(new FormElement($.fn.prepareFormElement(formElement)));
+        }
+    }
+
+    rawElementList.map(function(x) {
+        order =  order.map(y=>y.toLowerCase().replaceAll(' ','').replaceAll('_',''))
+        let index = order.indexOf(x.name.toLowerCase().replaceAll(' ','').replaceAll('_',''));
+        elementList[index] = x
+    });
+
+
+
+    callback(elementList);
+  
+}
+
+$.fn.formatFormField = function(formElement, skipElement, pauseCallback, access, callback) {
+    
     let  formData =  {}
-   
        
     if ((formElement['name'].toLowerCase().endsWith("id")||formElement['name'].toLowerCase()==("currencymap")||formElement['name'].toLowerCase()==("currencysymbol") ) && formElement['name'].toLowerCase().indexOf("image") == -1){
         formElement['outerDivClass']        = "form-group"
@@ -604,16 +661,61 @@ $.fn.formatFormField =  function(formElement, skipElement, pauseCallback, access
        
         formElement['value']                = formElement['name'].toLowerCase().indexOf('olddata' )>-1 ||formElement['name'].toLowerCase().indexOf('newdata' )>-1 ||formElement['name'].toLowerCase().indexOf('recordidentifier' )>-1?JSON.stringify(formElement['value']).replaceAll(",",",\r\n").replaceAll("}","\r\n}").replaceAll("{","{\r\n"): formElement['value']
         formElement['val']                  = formElement['value'] 
-     }else{
+     }else if (formElement['name']==("site") ) {
+
+
+        formElement['alternativeValues'] = null;
+        formElement['alternativeKeys'] = null;
+        //var listitems = '';
+        $('#pause-until-complete').val("1")
+        pauseCallback = true;
+        skipElement = false;
+        var listitems = '';
+        let valueList = [];
+        let keyList = [];
+
+        $.fn.getListForSelect('Sites', 'siteName', 'siteName', function(selectData) {
+            console.dir(selectData)
+            selectData.map(function(item) {
+                console.log(item)
+                let key = Object.keys(item)
+                let value = Object.values(item)
+                keyList.push(key);
+                valueList.push(value);
+            });
+
+            formElement['alternativeValues'] = valueList
+            formElement['alternativeKeys'] = keyList
+            formElement['chosenValue'] = formElement['value']
+            formElement['displayName'] = 'Site'
+            formElement['type'] = "select";
+            formElement['outerDivClass'] = "form-group"
+            formElement['editable'] = access == 'view' ? false : true;
+            formElement['validation'] = 'nocheck'
+            formData['formElement'] = formElement;
+            formData['skipElement'] = skipElement
+            formData['pauseCallback'] = false
+
+            callback(formData)
+
+        });
+
+
+
+    }else{
         formElement['outerDivClass']        =  "form-group"
         formElement['editable']             =  access=='view'?false:true;
         formElement['data']                 =  formElement['value']?formElement['value']:''
         formElement['value']                =  formElement['value']?formElement['value']:''
     } 
-    formData['formElement']                 =  formElement;
-    formData['skipElement']                 =  skipElement  
-    formData['pauseCallback']               =  pauseCallback
-    return formData;
+
+
+     if (!pauseCallback) {
+        formData['formElement'] = formElement;
+        formData['skipElement'] = skipElement
+        formData['pauseCallback'] = pauseCallback
+        callback (formData);
+    }
 }
     
 $.fn.loadPreviousPage = function(){
@@ -1010,7 +1112,11 @@ $(document).ready(function(){
                  $.fn.getTableData(opts)
        
     });  
+$.fn.drawSidebar(function(sideData){
 
- $('#tree').bstreeview({ data: $.fn.drawSidebar() });
+ $('#tree').bstreeview({ data: sideData});
+
+}) 
+
 
 });

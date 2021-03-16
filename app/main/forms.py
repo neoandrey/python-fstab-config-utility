@@ -7,11 +7,10 @@ from datetime import datetime
 #from app.models import User
 
 class LoginForm(FlaskForm):
-    username = StringField('inputUserName', validators=[DataRequired()])
-    password = PasswordField('inputPassword', validators=[DataRequired()])
+    username    = StringField('inputUserName', validators=[DataRequired()])
+    password    = PasswordField('inputPassword', validators=[DataRequired()])
     remember_me = BooleanField('remember_me')
-    submit = SubmitField('Sign In')
-
+    submit      = SubmitField('Sign In')
 
 class VCenterForm(FlaskForm):
     name              = StringField(_l('Name'), validators=[DataRequired()])

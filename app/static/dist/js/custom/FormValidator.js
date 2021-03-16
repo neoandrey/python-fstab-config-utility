@@ -18,7 +18,7 @@ class FormValidator {
     this.nextPageBttn  		  = options.nextPageBttn?   options.nextPageBttn:'';//$.session.get(formId + '_next_pages');
     this.validationResponse   = options.validationResponse?   options.validationResponse:{};
     this.serialCount          = options.serialCount?options.serialCount:0;
-    this.serializer           =  new Serializer();
+    this.serializer           = new Serializer();
    // this.formTarget           = options.formTarget?   options.formTarget:;
 
   }
@@ -169,16 +169,17 @@ class FormValidator {
                             var confirmMessageID = '';
                             var confirmFieldDivStr = '';
                             var confirmFormInputfield = '';
-                            if (fieldName === 'password_element'  || fieldName === 'confirm_password_element'){
-                                if (fieldName === 'password_element') {
+                            if ((fieldName === 'password'  || fieldName === 'confirm_password') ||(fieldName === 'password_element'  || fieldName === 'confirm_password_element') ){
+                                if (fieldName === 'password'|| fieldName === 'password_element') {
                                     confirmFieldPrefix = 'confirm_';
-                                } else if (fieldName === 'confirm_password_element') {
+                                } else if (fieldName === 'confirm_password'|| fieldName === 'confirm_password_element') {
                                     confirmFieldPrefix = '';
                                 }
                                 confirmValue = $('#confirm_password_id').val();
-                                confirmMessageID = confirmFieldPrefix + fieldName.replace('element', 'message');
-                                confirmFieldDivStr = confirmFieldPrefix + fieldName.replace('element', 'div');
+                                confirmMessageID = fieldName === 'password'? confirmFieldPrefix + fieldName+'_message' :confirmFieldPrefix + fieldName.replace('element', 'message');
+                                confirmFieldDivStr = fieldName === 'password'? confirmFieldPrefix + fieldName+'_div' : confirmFieldPrefix + fieldName.replace('element', 'div');
                                 confirmFormInputfield = document.getElementById('confirm_password_id');
+                               
                             } else{
                                 let confirmFieldName=  fieldName.toLowerCase().replace('password','')+confirmFieldNameSuffix;
                                 let confirmFieldId=  fieldName.toLowerCase().replace('password','')+confirmFieldIdSuffix;
@@ -216,7 +217,6 @@ class FormValidator {
                                     confirmFormInputfield.style     = validHighlight;
                                     formInputfieldDiv.className = "form-control form-control-lg";
                                     formInputfieldDiv.style     = validHighlight;
-
                                     confirmFormInputfield.value =(formValidater.serializer.multiCrypt(value, formValidater.serialCount))
                                     $('#'+fieldID).val(confirmFormInputfield.value);
                                 } else {
@@ -237,7 +237,6 @@ class FormValidator {
                                 document.getElementById(messageID).innerHTML = 'Password mismatch';
                                 formInputfieldDiv.style = invalidHighlight;
                                 validationMessage = '<li>Password mismatch</li>';
-
                                 $("#" + confirmMessageID).show();
                                 document.getElementById(confirmMessageID).innerHTML = 'Password mismatch';
                                 confirmFormInputfield.style = invalidHighlight;
