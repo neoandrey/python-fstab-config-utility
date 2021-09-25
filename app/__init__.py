@@ -2,29 +2,37 @@ import logging
 from logging.handlers import SMTPHandler, RotatingFileHandler
 import os
 from flask import Flask, request, current_app
-from flask_mongoengine import MongoEngine,MongoEngineSessionInterface
+#from flask_mongoengine import MongoEngine,MongoEngineSessionInterface
 from flask_migrate import Migrate
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
 from flask_babel import Babel, lazy_gettext as _l
-from elasticsearch import Elasticsearch
+#from elasticsearch import Elasticsearch
+from app.couchdbmanager import CouchDBManager
 from redis import Redis
 import rq
 from config import Config
 from flask_socketio import SocketIO
 from flask_socketio import  emit
+from flask_session import Session
+from inspect import currentframe, getframeinfo
+
+def get_debug_template():
+    from inspect import currentframe, getframeinfo
+    return "\nFile \"{}\", line {}\nFunction (Method): '{}'\nMessage: {}\n",getframeinfo,currentframe
 
 login = LoginManager()
 login.login_view = 'auth.login'
 #login.login_message = _l('Please log in.')
-mail = Mail()
+mail      = Mail()
 bootstrap = Bootstrap()
-moment = Moment()
-babel = Babel()
-db = MongoEngine()
-socketio = SocketIO()
+moment    = Moment()
+babel     = Babel()
+db        = CouchDBManager()
+socketio  = SocketIO()
+session   = Session()
 
 @socketio.on('connect')
 def test_connect():
@@ -44,16 +52,16 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     db.init_app(app)
-    app.session_interface = MongoEngineSessionInterface(db)
+    session.init_app(app)
     login.init_app(app)
     mail.init_app(app)
     bootstrap.init_app(app)
     moment.init_app(app)
     babel.init_app(app)
     socketio.init_app(app)
-    app.elasticsearch = Elasticsearch([app.config['ELASTICSEARCH_URL']]) if app.config['ELASTICSEARCH_URL'] else None
+    #app.elasticsearch = Elasticsearch([app.config['ELASTICSEARCH_URL']]) if app.config['ELASTICSEARCH_URL'] else None
     app.redis = Redis.from_url(app.config['REDIS_URL'])
-    app.task_queue = rq.Queue('csam-tasks', connection=app.redis)
+    app.task_queue = rq.Queue('CS3P-TASKS', connection=app.redis)
 
     from app.errors import bp as errors_bp
     app.register_blueprint(errors_bp)

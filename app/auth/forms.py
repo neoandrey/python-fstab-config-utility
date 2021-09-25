@@ -33,15 +33,14 @@ class RegistrationForm(FlaskForm):
     submit            = SubmitField(_l('Save'))
 
     def validate_username(self, username):
-        user = Users.objects(username=username.data).first()
-        if user is not None:
+        user= Users().get("username",username.data )
+        if  bool(user):
             raise ValidationError(_('Please use a different username.'))
 
     def validate_email(self, email):
-        user = Users.objects(email=email.data).first()
-        if user is not None:
+        user= Users().get("email",email.data )
+        if  bool(user):
             raise ValidationError(_('Please use a different email address.'))
-
 
 class ResetPasswordRequestForm(FlaskForm):
     email = StringField(_l('Email'), validators=[DataRequired(), Email()])

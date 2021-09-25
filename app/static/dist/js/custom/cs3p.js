@@ -1,406 +1,417 @@
-
-
 import Table from './Table.js';
 import FormElement from './FormElement.js';
 import Serializer from './Serializer.js';
 import FormValidator from './FormValidator.js';
 import Form from './Form.js';
 
- $.fn.drawSidebar = function(callback) {
-var searchCriteria  = {}
-var tableName       = 'sites'
-var paramString     = 'c=' + tableName + '&qt=sel&qf=' + JSON.stringify(searchCriteria)+"&df=table";
-var tableUrl        = '/main/data'  
-$.fn.runGet(tableUrl ,paramString, function(data){
-        var sites = $.fn.getObjectType(data)=="string"?JSON.parse(data)['tabData']:data['tabData'];
-        tableName       = 'vcenters'
-        paramString     = 'c=' + tableName + '&qt=sel&qf=' + JSON.stringify(searchCriteria)+"&df=table";
-    $.fn.runGet(tableUrl ,paramString,  function(data){
-        var  vcenters = $.fn.getObjectType(data)=="string"?JSON.parse(data)['tabData']:data['tabData'];
-          tableName       = 'clusters'
-          paramString     = 'c=' + tableName + '&qt=sel&qf=' + JSON.stringify(searchCriteria)+"&df=table";   
-		  $.fn.runGet(tableUrl ,paramString,  function(data){
-             var    clusters = $.fn.getObjectType(data)=="string"?JSON.parse(data)['tabData']:data['tabData'];
-             tableName       = 'hosts'
-              paramString     = 'c=' + tableName + '&qt=sel&qf=' + JSON.stringify(searchCriteria)+"&df=table";   
-		      $.fn.runGet(tableUrl ,paramString,  function(data){
-                 var    hosts = $.fn.getObjectType(data)=="string"?JSON.parse(data)['tabData']:data['tabData'];
-                 tableName       = 'vms'
-                 paramString     = 'c=' + tableName + '&qt=sel&qf=' + JSON.stringify(searchCriteria)+"&df=table";   
-		         $.fn.runGet(tableUrl ,paramString,  function(data){
-                 var    vms = $.fn.getObjectType(data)=="string"?JSON.parse(data)['tabData']:data['tabData'];
-                 var  tree = [];
-				 for(let site of sites){
-				 var  vcenterList = [];
 
-                    let vcenterSubList = vcenters.filter(function(vcenter) {
-                        return vcenter.site.toLowerCase() == site.siteName.toLowerCase()
-                    });
+$.fn.drawSidebar = function(callback) {
+    var searchCriteria = {}
+    var tableName = 'sites'
+    var paramString = 'c=' + tableName + '&qt=sel&qf=' + JSON.stringify(searchCriteria) + "&df=table";
+    var tableUrl = '/main/data'
+    $.fn.runObjectGet(tableUrl, paramString, function(data) {
+        var sites = $.fn.getObjectType(data) == "string" ? JSON.parse(data)['tabData'] : data['tabData'];
+        tableName = 'vcenters'
+        paramString = 'c=' + tableName + '&qt=sel&qf=' + JSON.stringify(searchCriteria) + "&df=table";
+        $.fn.runObjectGet(tableUrl, paramString, function(data) {
+            var vcenters = $.fn.getObjectType(data) == "string" ? JSON.parse(data)['tabData'] : data['tabData'];
+            tableName = 'clusters'
+            paramString = 'c=' + tableName + '&qt=sel&qf=' + JSON.stringify(searchCriteria) + "&df=table";
+            $.fn.runObjectGet(tableUrl, paramString, function(data) {
+                var clusters = $.fn.getObjectType(data) == "string" ? JSON.parse(data)['tabData'] : data['tabData'];
+                tableName = 'hosts'
+                paramString = 'c=' + tableName + '&qt=sel&qf=' + JSON.stringify(searchCriteria) + "&df=table";
+                $.fn.runObjectGet(tableUrl, paramString, function(data) {
+                    var hosts = $.fn.getObjectType(data) == "string" ? JSON.parse(data)['tabData'] : data['tabData'];
+                    tableName = 'vms'
+                    paramString = 'c=' + tableName + '&qt=sel&qf=' + JSON.stringify(searchCriteria) + "&df=table";
+                    $.fn.runObjectGet(tableUrl, paramString, function(data) {
+                        var vms = $.fn.getObjectType(data) == "string" ? JSON.parse(data)['tabData'] : data['tabData'];
+                        var tree = [];
+                        for (let site of sites) {
+                            var vcenterList = [];
 
-				  for(let vcenter of vcenterSubList){    
-
-                    let clusterSubList = clusters.filter(function(cluster) {
-                        return cluster.vcenter === vcenter.ipAddress
-                    });
-                    let clusterList = []
-				    for(let cluster of clusterSubList){
-                            
-                            let hostSubList = hosts.filter(function(host) {
-                                return host.cluster.toLowerCase() === cluster.name.toLowerCase();
+                            let vcenterSubList = vcenters.filter(function(vcenter) {
+                                return vcenter.site.toLowerCase() == site.siteName.toLowerCase()
                             });
-                            let hostList = []
 
-                            for (let host of hostSubList){
-                                let vmSubList = vms.filter(function(vm) {
-                                    return vm.host.toLowerCase() === host.name.toLowerCase();
+                            for (let vcenter of vcenterSubList) {
+
+                                let clusterSubList = clusters.filter(function(cluster) {
+                                    return cluster.vcenter === vcenter.ipAddress
                                 });
-                                let vmList = []
+                                let clusterList = []
+                                for (let cluster of clusterSubList) {
 
-                                for(let vm of vmSubList){
-                                  let  id  = vm.id;
-                                  let vmObj ={
-                                        text: vm.vm_name.toUpperCase(),
-                                        icon: "fa fa-desktop",
-                                         id:  id
-                                    };
-                                    vmList.push(vmObj);
+                                    let hostSubList = hosts.filter(function(host) {
+                                        return host.cluster.toLowerCase() === cluster.name.toLowerCase();
+                                    });
+                                    let hostList = []
+
+                                    for (let host of hostSubList) {
+                                        let vmSubList = vms.filter(function(vm) {
+                                            return vm.host.toLowerCase() === host.name.toLowerCase();
+                                        });
+                                        let vmList = []
+
+                                        for (let vm of vmSubList) {
+                                            let id = vm._id;
+                                            let vmObj = {
+                                                text: vm.vm_name.toUpperCase(),
+                                                icon: "fa fa-desktop",
+                                                id: id,
+                                                onclick: `$.fn.getVmDetails('${id}')`
+                                            };
+                                            vmList.push(vmObj);
+                                        }
+
+                                        let id = host._id;
+                                        let hostObj = {
+                                            text: host.name,
+                                            icon: "fa fa-server",
+                                            id: id,
+                                            nodes: vmList
+                                        }
+                                        hostList.push(hostObj);
+                                    }
+
+                                    let id = cluster._id;
+                                    let clusterObj = {
+                                        text: cluster.name,
+                                        icon: "fa fa-sitemap",
+                                        id: id,
+                                        nodes: hostList
+                                    }
+                                    clusterList.push(clusterObj);
                                 }
 
-                                let  id  = host.id;
-                                let hostObj ={
-                                text: host.name,
-                                icon: "fa fa-server",
-                                id:  id,
-                                nodes: vmList
+                                let id = vcenter._id;
+                                let vcenterObj = {
+                                    text: vcenter.name,
+                                    icon: "fa fa-cloud",
+                                    id: id,
+                                    nodes: clusterList
                                 }
-                                hostList.push(hostObj);
+                                vcenterList.push(vcenterObj)
+
                             }
-                          
-                            let  id  = cluster.id;
-                            let clusterObj ={
-                            text: cluster.name,
-                            icon: "fa fa-sitemap",
-                            id:  id,
-                            nodes: hostList
+                            let siteObj = {}
+                            let id = site._id;
+                            siteObj = {
+                                text: site.siteName,
+                                icon: "fa fa-globe",
+                                id: id,
+                                nodes: vcenterList
                             }
-							clusterList.push(clusterObj);		 
-					 }
-                  
-					 let  id  = vcenter.id;
-					 let vcenterObj ={
-					   text: vcenter.name,
-					   icon: "fa fa-cloud",
-					   id:  id,
-					   nodes: clusterList
-				      }
-				      vcenterList.push(vcenterObj)      
-				    
-                  }
-                 let siteObj = {}
-				 let  id  = site.id;
-				   siteObj ={
-					   text: site.siteName,
-					   icon: "fa fa-globe",
-					   id  :id,
-					   nodes: vcenterList
-				  }
-                
-				tree.push(siteObj) 
-			 }
-            callback(JSON.stringify(tree));
-			 });
-          });
-			}); 				  
-		}); 
-  });
- 
+
+                            tree.push(siteObj)
+                        }
+                        callback(JSON.stringify(tree));
+                    });
+                });
+            });
+        });
+    });
+
 };
 
-$.fn.emit = function(msg,data){
+$.fn.emit = function(msg, data) {
     //console.log('socket: ')       
     //console.dir( $.fn.socket) 
     //console.log(msg);
     //console.log(data)   
     $('#current-item-type').val('table')
-    $.fn.socket.emit(msg, data); 
-            
+    $.fn.socket.emit(msg, data);
+
 }
 
-$.fn.getExcludedColumnList = function (table, type){
+$.fn.getExcludedColumnList = function(table, type) {
     table = table.toLowerCase();
-        if (type== 'table'){
-            switch(table){
-                case 'vcenters':
-                    return  ['_id','password','productLine', 'creationdate','username','port']
+    if (type == 'table') {
+        switch (table) {
+            case 'vcenters':
+                return ['_id', 'password', 'productLine', 'creationdate', 'username', 'port']
                 break;
-                case 'teams':
-                    return  ['_id', 'creationdate']
-                case 'audittrail':
-                    return  [ 'oldData', 'newData']
+            case 'teams':
+                return ['_id', 'creationdate']
+            case 'audittrail':
+                return ['oldData', 'newData']
                 break;
-                case 'sitesettings':
-                    return ['ldapUser','ldapPassword','emailUser','emailPassword', 'lastModifiedDate']
-                default:
-                    return ['_id']
-            }
-        } else if (type== 'form'){
-            switch(table){
-                case 'vcenters':
-                    return  ['_id'];
+            case 'sitesettings':
+                return ['ldapUser', 'ldapPassword', 'emailUser', 'emailPassword', 'lastModifiedDate']
+            default:
+                return ['_id']
+        }
+    } else if (type == 'form') {
+        switch (table) {
+            case 'vcenters':
+                return ['_id'];
                 break;
-                default:
-                    return ['_id'];
-            }
+            default:
+                return ['_id'];
+        }
+
+    }
 
 }
+$.fn.getFormData = function(opts) {
+    // alert(JSON.stringify(opts))
 
-}
-$.fn.getFormData =function (opts){
-   // alert(JSON.stringify(opts))
-		
-    let  currentItem = $('#current-item').val();
-    udpdatePageHeader({'mainPage':currentItem, 'subPage':'New'});  
+    let currentItem = $('#current-item').val();
+    udpdatePageHeader({ 'mainPage': currentItem, 'subPage': 'New' });
     $("#page-content").hide();
     $("#table-content").hide();
     $("#form-content").show();
+    $("#object-details-content").hide();
     $("#form-div").html('<div style="text-align:center"> <img src="static/images/ajax-loaders/ajax-loader-6.gif" /> </div>');
-    $("#form-title").html(currentItem+": Provide details for new record");
+    $("#form-title").html(currentItem + ": Provide details for new record");
 
-    let currentTable 	= opts.currentTable?opts.currentTable.toLowerCase():'';
-    let tableIDField 	= opts.tableIDField?opts.tableIDField:'';
-    let id 		 	    = opts.id?opts.id:'';
-    let formName     	= opts.formName?opts.formName:''
-    let dataType     	= opts.dataType?opts.dataType:''
-    let recordInd       = opts.recordInd? opts.recordInd:-1;  
-    if (opts.resetFlag ==1){
-        $.fn.sessionSet(currentTable.toLowerCase()+"_reset_flag",'1')
+    let currentTable = opts.currentTable ? opts.currentTable.toLowerCase() : '';
+    let tableIDField = opts.tableIDField ? opts.tableIDField : '';
+    let id = opts.id ? opts.id : '';
+    let formName = opts.formName ? opts.formName : ''
+    let dataType = opts.dataType ? opts.dataType : ''
+    let recordInd = opts.recordInd ? opts.recordInd : -1;
+    if (opts.resetFlag == 1) {
+        $.fn.sessionSet(currentTable.toLowerCase() + "_reset_flag", '1')
     }
 
-    $.fn.runSchemaGet('/main/schema',{qf:currentTable},function(tData){
+    $.fn.runSchemaGet('/main/schema', { qf: currentTable }, function(tData) {
         //console.log('line 66: form Schema Data');
         //console.dir(tData);      
-        tData                       = (typeof tData).toLowerCase() =='object'?tData:JSON.parse(tData)           
-        let options                 = {};
-        let pryKey                  = tData && tData['idField']? tData['idField']: opts.tableIDField;
-        let fieldID                 = $.fn.capitalizeFirstLetter(currentTable);
-        options.access              =  opts.access;//   recordInd!= -1 ?'edit':'new';
-        options.parentPage          = '';
-        options.currentPage         = currentTable;
-        options.currentItem         = currentTable;
-        options.tableID             = currentTable;
-        options.presentData         = '<table id="' + options.tableID + '"></table>';
-        options.tableName           = currentTable;
-        options.sourceUrl           = '/main/data';
-        options.idColumn            = pryKey; 
-        options.formDetails         = '';
-        options.elementList         = new Array();
-        options.resetFlag           =  0;
-        options.tagID               = 'form-div';
-        options.sectionIDCol        = '';
-        options.editMode            =  opts.isEditable;
-        options.recordID            =  recordInd;
-        options.class               =  ''
-        options.encType             = opts.encType?opts.encType:'multipart/form-data'
-        options.id                  =  currentTable//tData['idField'];
-        options.name                = ''
-        options.method              = 'post'
-        options.action              =  '/main/data'
-        options.type                =  recordInd >0 ?'existing':'new'
-        options.dataType            =  dataType
-        options.nextPageUrl         =  '' 
-        options.resetFlag           = opts.resetFlag?opts.resetFlag:0
-        options.allFields           = tData[currentTable]
-        options.excludedColList     = opts.excludedColList?opts.excludedColList:['_id'];
-        options.headerTitle         = opts.access=="view"?currentTable+': Details of record '+recordInd: `${currentItem}: New Entry Creation Form`
-        options.primaryKey          = tData['idField'];
-        options.columns             = tData[currentTable];
-        options.serialCount         = tData['sc']
-        
-        $.fn.getFormElementList ({'serialCount':options.serialCount,'tableName':currentTable,'cols':tData[currentTable.toLowerCase()],'excludedCols': options.excludedColList  ,'recordInd':recordInd, 'access':opts.access, 'order':tData['order'], 'callback':function(eleList){
-            options.elementList     = eleList;
+        tData = (typeof tData).toLowerCase() == 'object' ? tData : JSON.parse(tData)
+        let options = {};
+        let pryKey = tData && tData['idField'] ? tData['idField'] : opts.tableIDField;
+        let fieldID = $.fn.capitalizeFirstLetter(currentTable);
+        options.access = opts.access; //   recordInd!= -1 ?'edit':'new';
+        options.parentPage = '';
+        options.currentPage = currentTable;
+        options.currentItem = currentTable;
+        options.tableID = currentTable;
+        options.presentData = '<table id="' + options.tableID + '"></table>';
+        options.tableName = currentTable;
+        options.sourceUrl = '/main/data';
+        options.idColumn = pryKey;
+        options.formDetails = '';
+        options.elementList = new Array();
+        options.resetFlag = 0;
+        options.tagID = 'form-div';
+        options.sectionIDCol = '';
+        options.editMode = opts.isEditable;
+        options.recordID = recordInd;
+        options.class = ''
+        options.encType = opts.encType ? opts.encType : 'multipart/form-data'
+        options.id = currentTable //tData['idField'];
+        options.name = ''
+        options.method = 'post'
+        options.action = '/main/data'
+        options.type = recordInd > 0 ? 'existing' : 'new'
+        options.dataType = dataType
+        options.nextPageUrl = ''
+        options.resetFlag = opts.resetFlag ? opts.resetFlag : 0
+        options.allFields = tData[currentTable]
+        options.excludedColList = opts.excludedColList ? opts.excludedColList : ['_id'];
+        options.headerTitle = opts.access == "view" ? currentTable + ': Details of record ' + recordInd : `${currentItem}: New Entry Creation Form`
+        options.primaryKey = tData['idField'];
+        options.columns = tData[currentTable];
+        options.serialCount = tData['sc']
 
-            $.fn.drawForm(options);
-        }} );
-});
+        $.fn.getFormElementList({
+            'serialCount': options.serialCount,
+            'tableName': currentTable,
+            'cols': tData[currentTable.toLowerCase()],
+            'excludedCols': options.excludedColList,
+            'recordInd': recordInd,
+            'access': opts.access,
+            'order': tData['order'],
+            'callback': function(eleList) {
+                options.elementList = eleList;
+
+                $.fn.drawForm(options);
+            }
+        });
+    });
 }
 
 $.fn.viewEntry = function(recordInd) {
 
-  $('#current-item-type').val('form')
-  recordInd = parseInt(recordInd);
+    $('#current-item-type').val('form')
+    recordInd = parseInt(recordInd);
 
-  let tableContents = $('#current-item').val().toLowerCase();
+    let tableContents = $('#current-item').val().toLowerCase();
 
-  let resetFlag = tableContents+'_reset_flag'
+    let resetFlag = tableContents + '_reset_flag'
 
-  var options  = {};
-  options.access              = 'view' //!isEditable ? 'view' : 'edit';
-  options.parentPage          = 'Settings';
-  options.sourceUrl           = '/main/data';
-  options.encType             = 'application/x-www-form-urlencoded'
-  options.method              = 'post'
-  options.action              =  '/main/data'
-  options.editMode            =  0;
-  options.recordID            = recordInd;
-  options.class               = ''
-  options.nextPageUrl         = '' 
-  options.type                = recordInd >0 ?'existing':'new'
-  options.tagID               = 'form-div';
+    var options = {};
+    options.access = 'view' //!isEditable ? 'view' : 'edit';
+    options.parentPage = 'Settings';
+    options.sourceUrl = '/main/data';
+    options.encType = 'application/x-www-form-urlencoded'
+    options.method = 'post'
+    options.action = '/main/data'
+    options.editMode = 0;
+    options.recordID = recordInd;
+    options.class = ''
+    options.nextPageUrl = ''
+    options.type = recordInd > 0 ? 'existing' : 'new'
+    options.tagID = 'form-div';
 
-  $.fn.sessionGet(resetFlag,  function(getData){
-    options.resetFlag =getData
-    if (tableContents === 'vcenters') {
+    $.fn.sessionGet(resetFlag, function(getData) {
+        options.resetFlag = getData
+        if (tableContents === 'vcenters') {
 
-        $.fn.getFormData({
-         currentTable :'VCenters'
-        , tableIDField :'_id'
-        ,id:'vcenters-form'
-        ,formName:'vcenter_mode'
-        ,dataType :'vcenters'
-        ,recordInd: recordInd
-        ,access: 'view'
-        ,enctype:'application/x-www-form-urlencoded'
-        ,excludedColList:  $.fn.getExcludedColumnList('vcenters', 'form')
-        ,options:{isEditable:true, isViewable:true, isIndelible: true}
-        , resetFlag:1
-        });
+            $.fn.getFormData({
+                currentTable: 'VCenters',
+                tableIDField: '_id',
+                id: 'vcenters-form',
+                formName: 'vcenter_mode',
+                dataType: 'vcenters',
+                recordInd: recordInd,
+                access: 'view',
+                enctype: 'application/x-www-form-urlencoded',
+                excludedColList: $.fn.getExcludedColumnList('vcenters', 'form'),
+                options: { isEditable: true, isViewable: true, isIndelible: true },
+                resetFlag: 1
+            });
 
-    }  else if (tableContents === 'teams') {
+        } else if (tableContents === 'teams') {
 
-        $.fn.getFormData({
-         currentTable :'Teams'
-        , tableIDField :'_id'
-        ,id:'teams-form'
-        ,formName:'teams_mode'
-        ,dataType :'teams'
-        ,recordInd: recordInd
-        ,access: 'view'
-        ,enctype:'application/x-www-form-urlencoded'
-        ,excludedColList: $.fn.getExcludedColumnList('teams', 'form')
-        ,options:{isEditable:true, isViewable:true, isIndelible: true}
-        });
+            $.fn.getFormData({
+                currentTable: 'Teams',
+                tableIDField: '_id',
+                id: 'teams-form',
+                formName: 'teams_mode',
+                dataType: 'teams',
+                recordInd: recordInd,
+                access: 'view',
+                enctype: 'application/x-www-form-urlencoded',
+                excludedColList: $.fn.getExcludedColumnList('teams', 'form'),
+                options: { isEditable: true, isViewable: true, isIndelible: true }
+            });
 
-    } else if (tableContents === 'audittrail') {
-        $.fn.getFormData({
-         currentTable :'AuditTrail'
-        ,tableIDField :'_id'
-        ,id:'audittrail-form'
-        ,formName:'audittrail_mode'
-        ,dataType :'audittrail'
-        ,recordInd: recordInd
-        ,access: 'view'
-        ,enctype:'application/x-www-form-urlencoded'
-        ,excludedColList: []
-        ,options:{isEditable:false, isViewable:true, isIndelible: false}
-        ,resetFlag: 1
-        });
-    }else if (tableContents === 'sitesettings') {
-        $.fn.getFormData({
-         currentTable :'SiteSettings'
-        ,tableIDField :'_id'
-        ,id:'sitesettings-form'
-        ,formName:'sitesettings_mode'
-        ,dataType :'sitesettings'
-        ,recordInd: recordInd
-        ,access: 'view'
-        ,enctype:'multipart/form-data'
-        ,excludedColList: $.fn.getExcludedColumnList('sitesettings','form')
-        ,options:{isEditable:true, isViewable:true, isIndelible: true}
-        ,resetFlag: 1
-        });
-    } else if (tableContents === 'images') {
-        $.fn.getFormData({
-         currentTable :'Images'
-        ,tableIDField :'_id'
-        ,id:'images-form'
-        ,formName:'images_mode'
-        ,dataType :'images'
-        ,recordInd: recordInd
-        ,access: 'view'
-        ,enctype:'multipart/form-data'
-        ,excludedColList: $.fn.getExcludedColumnList('images','form')
-        ,options:{isEditable:true, isViewable:true, isIndelible: true}
-        ,resetFlag: 1
-        });
-    } 
-});
+        } else if (tableContents === 'audittrail') {
+            $.fn.getFormData({
+                currentTable: 'AuditTrail',
+                tableIDField: '_id',
+                id: 'audittrail-form',
+                formName: 'audittrail_mode',
+                dataType: 'audittrail',
+                recordInd: recordInd,
+                access: 'view',
+                enctype: 'application/x-www-form-urlencoded',
+                excludedColList: [],
+                options: { isEditable: false, isViewable: true, isIndelible: false },
+                resetFlag: 1
+            });
+        } else if (tableContents === 'sitesettings') {
+            $.fn.getFormData({
+                currentTable: 'SiteSettings',
+                tableIDField: '_id',
+                id: 'sitesettings-form',
+                formName: 'sitesettings_mode',
+                dataType: 'sitesettings',
+                recordInd: recordInd,
+                access: 'view',
+                enctype: 'multipart/form-data',
+                excludedColList: $.fn.getExcludedColumnList('sitesettings', 'form'),
+                options: { isEditable: true, isViewable: true, isIndelible: true },
+                resetFlag: 1
+            });
+        } else if (tableContents === 'images') {
+            $.fn.getFormData({
+                currentTable: 'Images',
+                tableIDField: '_id',
+                id: 'images-form',
+                formName: 'images_mode',
+                dataType: 'images',
+                recordInd: recordInd,
+                access: 'view',
+                enctype: 'multipart/form-data',
+                excludedColList: $.fn.getExcludedColumnList('images', 'form'),
+                options: { isEditable: true, isViewable: true, isIndelible: true },
+                resetFlag: 1
+            });
+        }
+    });
 };
 
 
-$.fn.updateCurrentTable = function(){
-    try{   
-                         
-        var  currentItemType            = ($('#current-item-type').val()).toLowerCase();
-        var  currentItem                = ($('#current-item').val()).toLowerCase()
-        var  currentItemCreateInfo      = ($('#current-item').val()).toLowerCase()+"_create_info";
+$.fn.updateCurrentTable = function() {
+    try {
 
-        $.fn.sessionGet(currentItemCreateInfo,function(options){
-            options     = $.fn.getObjectType(options)=="string"?JSON.parse(options):options;
-            options =  Object.assign(options,{currentTable:currentItem
-                ,header:  currentItem+' Records'
-                ,tableID: currentItem+'-table-data'
-                ,tableIDField :'_id'
-               ,id:currentItem+'-form'
-               ,tableName:currentItem
-               ,dataType :currentItem
-               ,excludedColList:$.fn.getExcludedColumnList(currentItem, 'table')
-               ,parentID: 'table-tag-div'
-               ,changeable:true
-               ,mainPage: 'Settings'
-               ,subPage: currentItem
-               ,currentTable: currentItem
-               ,options: {isEditable:true, isViewable:true, isIndelible: false}
-               });
-           // console.log('Table data')
+        var currentItemType = ($('#current-item-type').val()).toLowerCase();
+        var currentItem = ($('#current-item').val()).toLowerCase()
+        var currentItemCreateInfo = ($('#current-item').val()).toLowerCase() + "_create_info";
+
+        $.fn.sessionGet(currentItemCreateInfo, function(options) {
+            options = $.fn.getObjectType(options) == "string" ? JSON.parse(options) : options;
+            options = Object.assign(options, {
+                currentTable: currentItem,
+                header: currentItem + ' Records',
+                tableID: currentItem + '-table-data',
+                tableIDField: '_id',
+                id: currentItem + '-form',
+                tableName: currentItem,
+                dataType: currentItem,
+                excludedColList: $.fn.getExcludedColumnList(currentItem, 'table'),
+                parentID: 'table-tag-div',
+                changeable: true,
+                mainPage: 'Settings',
+                subPage: currentItem,
+                currentTable: currentItem,
+                options: { isEditable: true, isViewable: true, isIndelible: false }
+            });
+            // console.log('Table data')
             //console.dir(options)
-            if(options ) {     
-                $.fn.sessionSet(currentItem+'_reset_flag',1);  
-                $.fn.getTableData(options);  
-            }						
-          						
+            if (options) {
+                $.fn.sessionSet(currentItem + '_reset_flag', 1);
+                $.fn.getTableData(options);
+            }
+
         });
-  
-      }catch(e){
+
+    } catch (e) {
         console.log(e.stackTrace)
-      }
+    }
 }
 
 
 
-$.fn.drawTable = function (options){
-     try{
-      new  Table(options);
-      $.fn.closeDialog();
-    }catch(e){
+$.fn.drawTable = function(options) {
+    try {
+        new Table(options);
+        $.fn.closeDialog();
+    } catch (e) {
         console.log(e.stack)
     }
 }
 
 
-$.fn.drawForm = function (options){
+$.fn.drawForm = function(options) {
 
-    try{
-             new  Form(options);
-            $.fn.closeDialog();
-    }catch(e){
+    try {
+        new Form(options);
+        $.fn.closeDialog();
+    } catch (e) {
         console.log(e.stack)
     }
-    };
+};
 
 
 $.fn.getFormElementList = async function(opts) {
 
-    let tableName       = opts.tableName
-    let cols            = opts.cols
-    let excludedCols    = opts.excludedCols
-    let recordInd       = opts.recordInd
-    let access          = opts.access
-    let callback        = opts.callback
-    let serialCount     = opts.serialCount
-    let order           = opts.order
-    let rawElementList  = [];
-    let elementList     = [];
-    let rawData         = null;
+    let tableName = opts.tableName
+    let cols = opts.cols
+    let excludedCols = opts.excludedCols
+    let recordInd = opts.recordInd
+    let access = opts.access
+    let callback = opts.callback
+    let serialCount = opts.serialCount
+    let order = opts.order
+    let rawElementList = [];
+    let elementList = [];
+    let rawData = null;
 
     let tableColumns = Object.keys(cols);
     let displayColumns = Object.values(cols);
@@ -418,7 +429,7 @@ $.fn.getFormElementList = async function(opts) {
         formElement['displayName'] = displayColumns[i];
 
         if (excludedCols.indexOf(formElement['name'].toLowerCase()) < 0) {
-            formElement['value'] =  null;
+            formElement['value'] = null;
             formElement['val'] = null;
             if (formElement['name'].toLowerCase().indexOf('password') > -1) {
                 formElement['info'] = serialCount
@@ -431,237 +442,237 @@ $.fn.getFormElementList = async function(opts) {
     }
 
     rawElementList.map(function(x) {
-        order =  order.map(y=>y.toLowerCase().replaceAll(' ','').replaceAll('_',''))
-        let index = order.indexOf(x.name.toLowerCase().replaceAll(' ','').replaceAll('_',''));
+        order = order.map(y => y.toLowerCase().replaceAll(' ', '').replaceAll('_', ''))
+        let index = order.indexOf(x.name.toLowerCase().replaceAll(' ', '').replaceAll('_', ''));
         elementList[index] = x
     });
 
 
 
     callback(elementList);
-  
+
 }
 
 $.fn.formatFormField = function(formElement, skipElement, pauseCallback, access, callback) {
-    
-    let  formData =  {}
-       
-    if ((formElement['name'].toLowerCase().endsWith("id")||formElement['name'].toLowerCase()==("currencymap")||formElement['name'].toLowerCase()==("currencysymbol") ) && formElement['name'].toLowerCase().indexOf("image") == -1){
-        formElement['outerDivClass']        = "form-group"
-        formElement['editable']             = false
-        formElement['validation']           = 'nocheck'
-        formElement['displayName']          = formElement['name'].toUpperCase().replace('_','')
-        formElement['value']                = !formElement['value']   && formElement['name'].toLowerCase()==("currencysymbol")?'#8358;': formElement['value']  
-        formElement['value']                = !formElement['value']   && formElement['name'].toLowerCase()==("currencymap")?"{'Naira':'&#8358;'}": formElement['value']  
-   
-    } else if(formElement['name'].toLowerCase()==('favorites' )){
-        formElement['outerDivClass']        = "form-group";
-        formElement['editable']             =  access=='view'?false:true;
-        formElement['validation']           = 'nocheck' ;
-        formElement['value']                = '';    
-        formElement['displayName']          = 'preferences';
-    }else if( formElement['name'].toLowerCase()==('moreinformation' )){
-        formElement['outerDivClass']        = "form-group";
-        formElement['editable']             = access=='view'?false:true;
-        formElement['validation']           = 'nocheck' ;  
-        formElement['value']                = '';    
-    }else if(formElement['name'].toLowerCase().indexOf("date")>-1 || formElement['name'].toLowerCase().indexOf("time")>-1){
 
-        formElement['outerDivClass']        = "input-group date"
-        formElement['editable']             =  access=='view'?false:true;
-        formElement['type']                 = 'datepicker'
-        formElement['validation']           = 'date'
-        formElement['data']                 = formElement['value']? moment(new Date(formElement['value']['$date'] )).format('YYYY-MM-DD hh:mm:ss'): yyyymmddhhmmss(0);         
-        formElement['val']                  = formElement['value']
-        formElement['value']                = formElement['data']
-        formElement['outerDivClass']        = 'row'
-        formElement['size']                 = 255  
-        formElement['editable']             = (access=='view') ||(['creationdate','lastmodifieddate'].indexOf(formElement['name'].toLowerCase())>-1)?false:true;    
+    let formData = {}
 
-    } else if( formElement['name'].toLowerCase() == 'sliderimage' || ( ( formElement['name'].toLowerCase().indexOf("image") >-1 ||formElement['name'].toLowerCase().indexOf("fileurl") >-1 ||  formElement['name'].toLowerCase().indexOf("logo") > -1 ) && formElement['name'].toLowerCase().indexOf("id") < 0 && formElement['name'].toLowerCase().indexOf("name") < 0  ) ){          
-       
-        formElement['outerDivClass']        = "form-group"
-        formElement['editable']             = access=='view'?false:true;
-        formElement['type']                 = 'image'
-        formElement['validation']           = 'nocheck'
-        formElement['data']                 = formElement['value']?formElement['value']:''
-        formElement['value']                = formElement['data']
-        formElement['size']                 = '' 
-        formElement['displayName']          = 'Image Location'              
-    } else if(formElement['name'].toLowerCase().indexOf("gender") > -1 ){
-        formElement['type']                 = "select";
-        formElement['outerDivClass']        = "form-group"
-        formElement['editable']             = access=='view'?false:true;
-        formElement['validation']           = 'nocheck'
-        formElement['alternativeValues']    = ['Male','Female','Others']
-        formElement['chosenValue']          = formElement['value']?formElement['value']:'Male'
-        formElement['value']                = formElement['chosenValue']
-        formElement['size']                 = 255                    
-    }else if(formElement['name'].toLowerCase().indexOf("country") > -1 ){
-        formElement['type']                 = "select";
-        formElement['outerDivClass']        = "form-group"
-        formElement['editable']             = access=='view'?false:true;
-        formElement['validation']           = 'nocheck'
-        formElement['alternativeValues']    = ["Afghanistan","Albania","Algeria","American Samoa","Andorra","Angola","Anguilla","Antarctica","Antigua and Barbuda","Argentina","Armenia","Aruba","Australia","Austria","Azerbaijan","Bahamas (the)","Bahrain","Bangladesh","Barbados","Belarus","Belgium","Belize","Benin","Bermuda","Bhutan","Bolivia (Plurinational State of)","Bonaire, Sint Eustatius and Saba","Bosnia and Herzegovina","Botswana","Bouvet Island","Brazil","British Indian Ocean Territory (the)","Brunei Darussalam","Bulgaria","Burkina Faso","Burundi","Cabo Verde","Cambodia","Cameroon","Canada","Cayman Islands (the)","Central African Republic (the)","Chad","Chile","China","Christmas Island","Cocos (Keeling) Islands (the)","Colombia","Comoros (the)","Congo (the Democratic Republic of the)","Congo (the)","Cook Islands (the)","Costa Rica","Croatia","Cuba","Curaçao","Cyprus","Czechia","Côte d'Ivoire","Denmark","Djibouti","Dominica","Dominican Republic (the)","Ecuador","Egypt","El Salvador","Equatorial Guinea","Eritrea","Estonia","Eswatini","Ethiopia","Falkland Islands (the) [Malvinas]","Faroe Islands (the)","Fiji","Finland","France","French Guiana","French Polynesia","French Southern Territories (the)","Gabon","Gambia (the)","Georgia","Germany","Ghana","Gibraltar","Greece","Greenland","Grenada","Guadeloupe","Guam","Guatemala","Guernsey","Guinea","Guinea-Bissau","Guyana","Haiti","Heard Island and McDonald Islands","Holy See (the)","Honduras","Hong Kong","Hungary","Iceland","India","Indonesia","Iran (Islamic Republic of)","Iraq","Ireland","Isle of Man","Israel","Italy","Jamaica","Japan","Jersey","Jordan","Kazakhstan","Kenya","Kiribati","Korea (the Democratic People's Republic of)","Korea (the Republic of)","Kuwait","Kyrgyzstan","Lao People's Democratic Republic (the)","Latvia","Lebanon","Lesotho","Liberia","Libya","Liechtenstein","Lithuania","Luxembourg","Macao","Madagascar","Malawi","Malaysia","Maldives","Mali","Malta","Marshall Islands (the)","Martinique","Mauritania","Mauritius","Mayotte","Mexico","Micronesia (Federated States of)","Moldova (the Republic of)","Monaco","Mongolia","Montenegro","Montserrat","Morocco","Mozambique","Myanmar","Namibia","Nauru","Nepal","Netherlands (the)","New Caledonia","New Zealand","Nicaragua","Niger (the)","Nigeria","Niue","Norfolk Island","Northern Mariana Islands (the)","Norway","Oman","Pakistan","Palau","Palestine, State of","Panama","Papua New Guinea","Paraguay","Peru","Philippines (the)","Pitcairn","Poland","Portugal","Puerto Rico","Qatar","Republic of North Macedonia","Romania","Russian Federation (the)","Rwanda","Réunion","Saint Barthélemy","Saint Helena, Ascension and Tristan da Cunha","Saint Kitts and Nevis","Saint Lucia","Saint Martin (French part)","Saint Pierre and Miquelon","Saint Vincent and the Grenadines","Samoa","San Marino","Sao Tome and Principe","Saudi Arabia","Senegal","Serbia","Seychelles","Sierra Leone","Singapore","Sint Maarten (Dutch part)","Slovakia","Slovenia","Solomon Islands","Somalia","South Africa","South Georgia and the South Sandwich Islands","South Sudan","Spain","Sri Lanka","Sudan (the)","Suriname","Svalbard and Jan Mayen","Sweden","Switzerland","Syrian Arab Republic","Taiwan (Province of China)","Tajikistan","Tanzania, United Republic of","Thailand","Timor-Leste","Togo","Tokelau","Tonga","Trinidad and Tobago","Tunisia","Turkey","Turkmenistan","Turks and Caicos Islands (the)","Tuvalu","Uganda","Ukraine","United Arab Emirates (the)","United Kingdom of Great Britain and Northern Ireland (the)","United States Minor Outlying Islands (the)","United States of America (the)","Uruguay","Uzbekistan","Vanuatu","Venezuela (Bolivarian Republic of)","Viet Nam","Virgin Islands (British)","Virgin Islands (U.S.)","Wallis and Futuna","Western Sahara","Yemen","Zambia","Zimbabwe","Åland Islands"];
-        formElement['chosenValue']          = formElement['value']?formElement['value']:'Nigeria'
-        formElement['value']                = formElement['chosenValue']
-        formElement['size']                 = 255                    
-    }else if(formElement['name'].toLowerCase().indexOf("version") > -1 ){
-        formElement['type']                 = "select";
-        formElement['outerDivClass']        = "form-group"
-        formElement['editable']             = access=='view'?false:true;
-        formElement['validation']           = 'nocheck'
-        formElement['alternativeValues']    = ["5.5","6.0","6.5","6.7","7.0"];
-        formElement['value']                = formElement['value']?formElement['value']:'6.5'
-        formElement['chosenValue']          = formElement['value']
-        formElement['size']                 = 255                    
-    }else if(formElement['name'].toLowerCase()==("blogbody")){
-        formElement['type']                 = "editor";
-        formElement['outerDivClass']        = "form-group"
-        formElement['editable']             = access=='view'?false:true;
-        formElement['validation']           = 'date'
-        formElement['data']                 = formElement['value']?formElement['value']:''
-        formElement['value']                = formElement['data']
-        formElement['size']                 = 255                    
-    }else if(formElement['name'].toLowerCase().indexOf("active")>-1){
-        formElement['type']                 = "select";
-        formElement['outerDivClass']        = "form-group"
-        formElement['editable']             = access=='view'?false:true;
-        formElement['validation']           = 'nocheck'                     
-        formElement['alternativeValues']    = ['No', 'Yes']
-        formElement['value']                = formElement['value'] && (formElement['value'].toString().toLowerCase()=='true')?'Yes':'No'
-        formElement['chosenValue']          = formElement['value']  
-        //alert(formElement['chosenValue'] )
-    }else if(formElement['name'].toLowerCase().indexOf("currencyname")>-1){
+    if ((formElement['name'].toLowerCase().endsWith("id") || formElement['name'].toLowerCase() == ("currencymap") || formElement['name'].toLowerCase() == ("currencysymbol")) && formElement['name'].toLowerCase().indexOf("image") == -1) {
+        formElement['outerDivClass'] = "form-group"
+        formElement['editable'] = false
+        formElement['validation'] = 'nocheck'
+        formElement['displayName'] = formElement['name'].toUpperCase().replace('_', '')
+        formElement['value'] = !formElement['value'] && formElement['name'].toLowerCase() == ("currencysymbol") ? '#8358;' : formElement['value']
+        formElement['value'] = !formElement['value'] && formElement['name'].toLowerCase() == ("currencymap") ? "{'Naira':'&#8358;'}" : formElement['value']
 
-        formElement['type']                 = "select";
-        formElement['outerDivClass']        = "form-group"
-        formElement['editable']             = access=='view'?false:true;
-        formElement['validation']           = 'nocheck'
-        formElement['alternativeValues']    = [ 'euro-currency','cruzeiro','french franc','lira','peseta','drachma','german penny','austral','livre tournois','dollar','cent','pound','currency','yen','armenian dram','afghani','nko dorome','nko taman','bengali rupee mark','bengali rupee','bengali ganda mark','gujarati rupee','tamil rupee','thai currency symbol baht','khmer currency symbol riel','colon','naira','rupee','won','new sheqel','dong','euro','kip','tugrik','peso','guarani','hryvnia','cedi','tenge','indian rupee','turkish lira','nordic mark','manat','ruble','lari','bitcoin','north indic rupee mark','rial','small dollar','fullwidth dollar','fullwidth cent','fullwidth pound','fullwidth yen','fullwidth won','indic siyaq rupee mark','mill','spesmilo']
-        formElement['chosenValue']          = 'naira'
-        formElement['value']                = 'naira'
-        formElement['size']                 = 255  
-        formElement['action']               = "onchange='$.fn.updateCurrencySymbol()'"
+    } else if (formElement['name'].toLowerCase() == ('favorites')) {
+        formElement['outerDivClass'] = "form-group";
+        formElement['editable'] = access == 'view' ? false : true;
+        formElement['validation'] = 'nocheck';
+        formElement['value'] = '';
+        formElement['displayName'] = 'preferences';
+    } else if (formElement['name'].toLowerCase() == ('moreinformation')) {
+        formElement['outerDivClass'] = "form-group";
+        formElement['editable'] = access == 'view' ? false : true;
+        formElement['validation'] = 'nocheck';
+        formElement['value'] = '';
+    } else if (formElement['name'].toLowerCase().indexOf("date") > -1 || formElement['name'].toLowerCase().indexOf("time") > -1) {
 
-    }else if(formElement['name'].toLowerCase().indexOf("isproductonoffer")>-1){
+        formElement['outerDivClass'] = "input-group date"
+        formElement['editable'] = access == 'view' ? false : true;
+        formElement['type'] = 'datepicker'
+        formElement['validation'] = 'date'
+        formElement['data'] = formElement['value'] ? moment(new Date(formElement['value']['$date'])).format('YYYY-MM-DD hh:mm:ss') : yyyymmddhhmmss(0);
+        formElement['val'] = formElement['value']
+        formElement['value'] = formElement['data']
+        formElement['outerDivClass'] = 'row'
+        formElement['size'] = 255
+        formElement['editable'] = (access == 'view') || (['creationdate', 'lastmodifieddate'].indexOf(formElement['name'].toLowerCase()) > -1) ? false : true;
 
-        formElement['type']                 = "select";
-        formElement['outerDivClass']        = "form-group"
-        formElement['editable']             = access=='view'?false:true;
-        formElement['validation']           = 'nocheck'
-        formElement['alternativeValues']    = [ 'Yes','No']
-        formElement['chosenValue']          = 'No'
-        formElement['value']                = 'No'
-        formElement['size']                 = 255  
-        //formElement['action']               = "onchange='$.fn.updateCurrencySymbol()'"
+    } else if (formElement['name'].toLowerCase() == 'sliderimage' || ((formElement['name'].toLowerCase().indexOf("image") > -1 || formElement['name'].toLowerCase().indexOf("fileurl") > -1 || formElement['name'].toLowerCase().indexOf("logo") > -1) && formElement['name'].toLowerCase().indexOf("id") < 0 && formElement['name'].toLowerCase().indexOf("name") < 0)) {
 
-    }else if(formElement['name'].toLowerCase().indexOf("defaultcurrency")>-1){
+        formElement['outerDivClass'] = "form-group"
+        formElement['editable'] = access == 'view' ? false : true;
+        formElement['type'] = 'image'
+        formElement['validation'] = 'nocheck'
+        formElement['data'] = formElement['value'] ? formElement['value'] : ''
+        formElement['value'] = formElement['data']
+        formElement['size'] = ''
+        formElement['displayName'] = 'Image Location'
+    } else if (formElement['name'].toLowerCase().indexOf("gender") > -1) {
+        formElement['type'] = "select";
+        formElement['outerDivClass'] = "form-group"
+        formElement['editable'] = access == 'view' ? false : true;
+        formElement['validation'] = 'nocheck'
+        formElement['alternativeValues'] = ['Male', 'Female', 'Others']
+        formElement['chosenValue'] = formElement['value'] ? formElement['value'] : 'Male'
+        formElement['value'] = formElement['chosenValue']
+        formElement['size'] = 255
+    } else if (formElement['name'].toLowerCase().indexOf("country") > -1) {
+        formElement['type'] = "select";
+        formElement['outerDivClass'] = "form-group"
+        formElement['editable'] = access == 'view' ? false : true;
+        formElement['validation'] = 'nocheck'
+        formElement['alternativeValues'] = ["Afghanistan", "Albania", "Algeria", "American Samoa", "Andorra", "Angola", "Anguilla", "Antarctica", "Antigua and Barbuda", "Argentina", "Armenia", "Aruba", "Australia", "Austria", "Azerbaijan", "Bahamas (the)", "Bahrain", "Bangladesh", "Barbados", "Belarus", "Belgium", "Belize", "Benin", "Bermuda", "Bhutan", "Bolivia (Plurinational State of)", "Bonaire, Sint Eustatius and Saba", "Bosnia and Herzegovina", "Botswana", "Bouvet Island", "Brazil", "British Indian Ocean Territory (the)", "Brunei Darussalam", "Bulgaria", "Burkina Faso", "Burundi", "Cabo Verde", "Cambodia", "Cameroon", "Canada", "Cayman Islands (the)", "Central African Republic (the)", "Chad", "Chile", "China", "Christmas Island", "Cocos (Keeling) Islands (the)", "Colombia", "Comoros (the)", "Congo (the Democratic Republic of the)", "Congo (the)", "Cook Islands (the)", "Costa Rica", "Croatia", "Cuba", "Curaçao", "Cyprus", "Czechia", "Côte d'Ivoire", "Denmark", "Djibouti", "Dominica", "Dominican Republic (the)", "Ecuador", "Egypt", "El Salvador", "Equatorial Guinea", "Eritrea", "Estonia", "Eswatini", "Ethiopia", "Falkland Islands (the) [Malvinas]", "Faroe Islands (the)", "Fiji", "Finland", "France", "French Guiana", "French Polynesia", "French Southern Territories (the)", "Gabon", "Gambia (the)", "Georgia", "Germany", "Ghana", "Gibraltar", "Greece", "Greenland", "Grenada", "Guadeloupe", "Guam", "Guatemala", "Guernsey", "Guinea", "Guinea-Bissau", "Guyana", "Haiti", "Heard Island and McDonald Islands", "Holy See (the)", "Honduras", "Hong Kong", "Hungary", "Iceland", "India", "Indonesia", "Iran (Islamic Republic of)", "Iraq", "Ireland", "Isle of Man", "Israel", "Italy", "Jamaica", "Japan", "Jersey", "Jordan", "Kazakhstan", "Kenya", "Kiribati", "Korea (the Democratic People's Republic of)", "Korea (the Republic of)", "Kuwait", "Kyrgyzstan", "Lao People's Democratic Republic (the)", "Latvia", "Lebanon", "Lesotho", "Liberia", "Libya", "Liechtenstein", "Lithuania", "Luxembourg", "Macao", "Madagascar", "Malawi", "Malaysia", "Maldives", "Mali", "Malta", "Marshall Islands (the)", "Martinique", "Mauritania", "Mauritius", "Mayotte", "Mexico", "Micronesia (Federated States of)", "Moldova (the Republic of)", "Monaco", "Mongolia", "Montenegro", "Montserrat", "Morocco", "Mozambique", "Myanmar", "Namibia", "Nauru", "Nepal", "Netherlands (the)", "New Caledonia", "New Zealand", "Nicaragua", "Niger (the)", "Nigeria", "Niue", "Norfolk Island", "Northern Mariana Islands (the)", "Norway", "Oman", "Pakistan", "Palau", "Palestine, State of", "Panama", "Papua New Guinea", "Paraguay", "Peru", "Philippines (the)", "Pitcairn", "Poland", "Portugal", "Puerto Rico", "Qatar", "Republic of North Macedonia", "Romania", "Russian Federation (the)", "Rwanda", "Réunion", "Saint Barthélemy", "Saint Helena, Ascension and Tristan da Cunha", "Saint Kitts and Nevis", "Saint Lucia", "Saint Martin (French part)", "Saint Pierre and Miquelon", "Saint Vincent and the Grenadines", "Samoa", "San Marino", "Sao Tome and Principe", "Saudi Arabia", "Senegal", "Serbia", "Seychelles", "Sierra Leone", "Singapore", "Sint Maarten (Dutch part)", "Slovakia", "Slovenia", "Solomon Islands", "Somalia", "South Africa", "South Georgia and the South Sandwich Islands", "South Sudan", "Spain", "Sri Lanka", "Sudan (the)", "Suriname", "Svalbard and Jan Mayen", "Sweden", "Switzerland", "Syrian Arab Republic", "Taiwan (Province of China)", "Tajikistan", "Tanzania, United Republic of", "Thailand", "Timor-Leste", "Togo", "Tokelau", "Tonga", "Trinidad and Tobago", "Tunisia", "Turkey", "Turkmenistan", "Turks and Caicos Islands (the)", "Tuvalu", "Uganda", "Ukraine", "United Arab Emirates (the)", "United Kingdom of Great Britain and Northern Ireland (the)", "United States Minor Outlying Islands (the)", "United States of America (the)", "Uruguay", "Uzbekistan", "Vanuatu", "Venezuela (Bolivarian Republic of)", "Viet Nam", "Virgin Islands (British)", "Virgin Islands (U.S.)", "Wallis and Futuna", "Western Sahara", "Yemen", "Zambia", "Zimbabwe", "Åland Islands"];
+        formElement['chosenValue'] = formElement['value'] ? formElement['value'] : 'Nigeria'
+        formElement['value'] = formElement['chosenValue']
+        formElement['size'] = 255
+    } else if (formElement['name'].toLowerCase().indexOf("version") > -1) {
+        formElement['type'] = "select";
+        formElement['outerDivClass'] = "form-group"
+        formElement['editable'] = access == 'view' ? false : true;
+        formElement['validation'] = 'nocheck'
+        formElement['alternativeValues'] = ["5.5", "6.0", "6.5", "6.7", "7.0"];
+        formElement['value'] = formElement['value'] ? formElement['value'] : '6.5'
+        formElement['chosenValue'] = formElement['value']
+        formElement['size'] = 255
+    } else if (formElement['name'].toLowerCase() == ("blogbody")) {
+        formElement['type'] = "editor";
+        formElement['outerDivClass'] = "form-group"
+        formElement['editable'] = access == 'view' ? false : true;
+        formElement['validation'] = 'date'
+        formElement['data'] = formElement['value'] ? formElement['value'] : ''
+        formElement['value'] = formElement['data']
+        formElement['size'] = 255
+    } else if (formElement['name'].toLowerCase().indexOf("active") > -1) {
+        formElement['type'] = "select";
+        formElement['outerDivClass'] = "form-group"
+        formElement['editable'] = access == 'view' ? false : true;
+        formElement['validation'] = 'nocheck'
+        formElement['alternativeValues'] = ['No', 'Yes']
+        formElement['value'] = formElement['value'] && (formElement['value'].toString().toLowerCase() == 'true') ? 'Yes' : 'No'
+        formElement['chosenValue'] = formElement['value']
+            //alert(formElement['chosenValue'] )
+    } else if (formElement['name'].toLowerCase().indexOf("currencyname") > -1) {
 
-        formElement['type']                 = "select";
-        formElement['outerDivClass']        = "form-group"
-        formElement['editable']             = access=='view'?false:true;
-        formElement['validation']           = 'nocheck'
-        formElement['value']                = formElement['value']?formElement['value']:'naira'
-        formElement['alternativeValues']    = null;
-        formElement['alternativeValues']    = null;                        
+        formElement['type'] = "select";
+        formElement['outerDivClass'] = "form-group"
+        formElement['editable'] = access == 'view' ? false : true;
+        formElement['validation'] = 'nocheck'
+        formElement['alternativeValues'] = ['euro-currency', 'cruzeiro', 'french franc', 'lira', 'peseta', 'drachma', 'german penny', 'austral', 'livre tournois', 'dollar', 'cent', 'pound', 'currency', 'yen', 'armenian dram', 'afghani', 'nko dorome', 'nko taman', 'bengali rupee mark', 'bengali rupee', 'bengali ganda mark', 'gujarati rupee', 'tamil rupee', 'thai currency symbol baht', 'khmer currency symbol riel', 'colon', 'naira', 'rupee', 'won', 'new sheqel', 'dong', 'euro', 'kip', 'tugrik', 'peso', 'guarani', 'hryvnia', 'cedi', 'tenge', 'indian rupee', 'turkish lira', 'nordic mark', 'manat', 'ruble', 'lari', 'bitcoin', 'north indic rupee mark', 'rial', 'small dollar', 'fullwidth dollar', 'fullwidth cent', 'fullwidth pound', 'fullwidth yen', 'fullwidth won', 'indic siyaq rupee mark', 'mill', 'spesmilo']
+        formElement['chosenValue'] = 'naira'
+        formElement['value'] = 'naira'
+        formElement['size'] = 255
+        formElement['action'] = "onchange='$.fn.updateCurrencySymbol()'"
+
+    } else if (formElement['name'].toLowerCase().indexOf("isproductonoffer") > -1) {
+
+        formElement['type'] = "select";
+        formElement['outerDivClass'] = "form-group"
+        formElement['editable'] = access == 'view' ? false : true;
+        formElement['validation'] = 'nocheck'
+        formElement['alternativeValues'] = ['Yes', 'No']
+        formElement['chosenValue'] = 'No'
+        formElement['value'] = 'No'
+        formElement['size'] = 255
+            //formElement['action']               = "onchange='$.fn.updateCurrencySymbol()'"
+
+    } else if (formElement['name'].toLowerCase().indexOf("defaultcurrency") > -1) {
+
+        formElement['type'] = "select";
+        formElement['outerDivClass'] = "form-group"
+        formElement['editable'] = access == 'view' ? false : true;
+        formElement['validation'] = 'nocheck'
+        formElement['value'] = formElement['value'] ? formElement['value'] : 'naira'
+        formElement['alternativeValues'] = null;
+        formElement['alternativeValues'] = null;
         var listitems = '';
         pauseCallback = true;
-        skipElement   = true;
-        
-        getListForSelect('Currency', 'currencyName','currencyName',  function(currencyData){
-        var listitems = '';
-        let itemList  = [];
-        $.each(currencyData, function(key, value){
+        skipElement = true;
+
+        getListForSelect('Currency', 'currencyName', 'currencyName', function(currencyData) {
+            var listitems = '';
+            let itemList = [];
+            $.each(currencyData, function(key, value) {
                 listitems += '<option value=' + key + '>' + value + '</option>';
                 itemList.push(value);
-        });
+            });
 
-       formElement['alternativeValues']     =   itemList
-    
-        if(pauseCallback){
-            pauseCallback = false;
-            elementList.push(new FormElement(prepareFormElement(formElement)));
-            elementList.sort(compareNames);
-            callback (elementList);
-        }
+            formElement['alternativeValues'] = itemList
 
-        });           
-
-        formElement['size']                 = 255  
-        //formElement['action']             = "onchange='$.fn.updateCurrencySymbol()'"
-    }else if(formElement['name'].toLowerCase()== "productcategory"){
-
-        formElement['type']                 = "select";
-        formElement['outerDivClass']        = "form-group"
-        formElement['editable']             = access=='view'?false:true;
-        formElement['validation']           = 'nocheck'  
-        formElement['alternativeValues']    = null;  
-        formElement['value']                = null;                          
-        var listitems = '';
-        pauseCallback = true;
-        skipElement   = true;
-
-        getListForSelect('ProductCategories', 'productCategoryName','productCategoryName',  function(currencyData){
-
-            let firstVal   = null;
-            let itemList   = []
-            for(let  i in  currencyData){
-            let key    =  i
-            let value  =  currencyData[i]
-            firstVal =  firstVal?firstVal:value
-            listitems += '<option value=' + key + '>' + value + '</option>';
-            itemList.push(value)
-            }                                                  
-                 
-            formElement['alternativeValues']     =   itemList
-            formElement['value']                = formElement['value']?formElement['value']:'Herbs';  
-            console.log(formElement['alternativeValues']);
-           
-            if(pauseCallback){
+            if (pauseCallback) {
                 pauseCallback = false;
                 elementList.push(new FormElement(prepareFormElement(formElement)));
                 elementList.sort(compareNames);
-                callback (elementList);
+                callback(elementList);
             }
-            });
-            formElement['size']                 = 255  
-       // formElement['action']               = "onload='$.fn.updateProductSelectOpts()'"
-    } else if(formElement['name'].toLowerCase().indexOf('productline' )>-1){
-            formElement['outerDivClass']        = "form-group";
-            formElement['editable']             =  access=='view'?false:true;
-            formElement['validation']           = 'alphanumspecial' ;
-            formElement['value']                = 'vpx';    
-    } else if(formElement['name'].toLowerCase()== 'password' || formElement['name'].toLowerCase()== 'emailpassword' || formElement['name'].toLowerCase()== 'ldappassword'){
-        formElement['type']                 = "password";
-        formElement['outerDivClass']        = "form-group";
-        formElement['editable']             =  true;
-        formElement['validation']           = 'password' ;  
-        let serializer                      = new Serializer();
-        formElement['value']                = formElement['value'] && formElement['value'].length > 20 ?serializer.multiDemystify(formElement['value'], parseInt( formElement['info']) ):formElement['value']
-        formElement['val']                  = formElement['value']   
-    }else if(formElement['name'].toLowerCase().indexOf("email")>-1 && ['emailserver','emailuser'].indexOf(formElement['name'].toLowerCase())<0){
-        formElement['outerDivClass']        = "form-group"
-        formElement['editable']             = access=='view'?false:true;
-        formElement['validation']           = 'email'
-        formElement['data']                 = formElement['value']?formElement['value']:''
-        formElement['value']                = formElement['data']
-        formElement['size']                 = 255                    
-    } else if(formElement['name'].toLowerCase().indexOf('ip' )>-1 && formElement['name'].toLowerCase().indexOf('address' )>-1){
-        formElement['type']                 = "text";
-        formElement['outerDivClass']        = "form-group";
-        formElement['editable']             =  access=='view'?false:true;;
-        formElement['validation']           = 'ipaddress' ;
-       
-     } else if(formElement['name'].toLowerCase().indexOf('description' )>-1 ||formElement['name'].toLowerCase().indexOf('olddata' )>-1 ||formElement['name'].toLowerCase().indexOf('newdata' )>-1||formElement['name'].toLowerCase().indexOf('recordidentifier' )>-1||formElement['name'].toLowerCase().indexOf('dimension' )>-1){
-        formElement['type']                 = "textarea";
-        formElement['outerDivClass']        = "form-group";
-        formElement['editable']             =  access=='view'?false:true;;
-        formElement['validation']           = 'nocheck' ;
-       
-        formElement['value']                = formElement['name'].toLowerCase().indexOf('olddata' )>-1 ||formElement['name'].toLowerCase().indexOf('newdata' )>-1 ||formElement['name'].toLowerCase().indexOf('recordidentifier' )>-1?JSON.stringify(formElement['value']).replaceAll(",",",\r\n").replaceAll("}","\r\n}").replaceAll("{","{\r\n"): formElement['value']
-        formElement['val']                  = formElement['value'] 
-     }else if (formElement['name']==("site") ) {
+
+        });
+
+        formElement['size'] = 255
+            //formElement['action']             = "onchange='$.fn.updateCurrencySymbol()'"
+    } else if (formElement['name'].toLowerCase() == "productcategory") {
+
+        formElement['type'] = "select";
+        formElement['outerDivClass'] = "form-group"
+        formElement['editable'] = access == 'view' ? false : true;
+        formElement['validation'] = 'nocheck'
+        formElement['alternativeValues'] = null;
+        formElement['value'] = null;
+        var listitems = '';
+        pauseCallback = true;
+        skipElement = true;
+
+        getListForSelect('ProductCategories', 'productCategoryName', 'productCategoryName', function(currencyData) {
+
+            let firstVal = null;
+            let itemList = []
+            for (let i in currencyData) {
+                let key = i
+                let value = currencyData[i]
+                firstVal = firstVal ? firstVal : value
+                listitems += '<option value=' + key + '>' + value + '</option>';
+                itemList.push(value)
+            }
+
+            formElement['alternativeValues'] = itemList
+            formElement['value'] = formElement['value'] ? formElement['value'] : 'Herbs';
+            console.log(formElement['alternativeValues']);
+
+            if (pauseCallback) {
+                pauseCallback = false;
+                elementList.push(new FormElement(prepareFormElement(formElement)));
+                elementList.sort(compareNames);
+                callback(elementList);
+            }
+        });
+        formElement['size'] = 255
+            // formElement['action']               = "onload='$.fn.updateProductSelectOpts()'"
+    } else if (formElement['name'].toLowerCase().indexOf('productline') > -1) {
+        formElement['outerDivClass'] = "form-group";
+        formElement['editable'] = access == 'view' ? false : true;
+        formElement['validation'] = 'alphanumspecial';
+        formElement['value'] = 'vpx';
+    } else if (formElement['name'].toLowerCase() == 'password' || formElement['name'].toLowerCase() == 'emailpassword' || formElement['name'].toLowerCase() == 'ldappassword') {
+        formElement['type'] = "password";
+        formElement['outerDivClass'] = "form-group";
+        formElement['editable'] = true;
+        formElement['validation'] = 'password';
+        let serializer = new Serializer();
+        formElement['value'] = formElement['value'] && formElement['value'].length > 20 ? serializer.multiDemystify(formElement['value'], parseInt(formElement['info'])) : formElement['value']
+        formElement['val'] = formElement['value']
+    } else if (formElement['name'].toLowerCase().indexOf("email") > -1 && ['emailserver', 'emailuser'].indexOf(formElement['name'].toLowerCase()) < 0) {
+        formElement['outerDivClass'] = "form-group"
+        formElement['editable'] = access == 'view' ? false : true;
+        formElement['validation'] = 'email'
+        formElement['data'] = formElement['value'] ? formElement['value'] : ''
+        formElement['value'] = formElement['data']
+        formElement['size'] = 255
+    } else if (formElement['name'].toLowerCase().indexOf('ip') > -1 && formElement['name'].toLowerCase().indexOf('address') > -1) {
+        formElement['type'] = "text";
+        formElement['outerDivClass'] = "form-group";
+        formElement['editable'] = access == 'view' ? false : true;;
+        formElement['validation'] = 'ipaddress';
+
+    } else if (formElement['name'].toLowerCase().indexOf('description') > -1 || formElement['name'].toLowerCase().indexOf('olddata') > -1 || formElement['name'].toLowerCase().indexOf('newdata') > -1 || formElement['name'].toLowerCase().indexOf('recordidentifier') > -1 || formElement['name'].toLowerCase().indexOf('dimension') > -1) {
+        formElement['type'] = "textarea";
+        formElement['outerDivClass'] = "form-group";
+        formElement['editable'] = access == 'view' ? false : true;;
+        formElement['validation'] = 'nocheck';
+
+        formElement['value'] = formElement['name'].toLowerCase().indexOf('olddata') > -1 || formElement['name'].toLowerCase().indexOf('newdata') > -1 || formElement['name'].toLowerCase().indexOf('recordidentifier') > -1 ? JSON.stringify(formElement['value']).replaceAll(",", ",\r\n").replaceAll("}", "\r\n}").replaceAll("{", "{\r\n") : formElement['value']
+        formElement['val'] = formElement['value']
+    } else if (formElement['name'] == ("site")) {
 
 
         formElement['alternativeValues'] = null;
@@ -702,421 +713,560 @@ $.fn.formatFormField = function(formElement, skipElement, pauseCallback, access,
 
 
 
-    }else{
-        formElement['outerDivClass']        =  "form-group"
-        formElement['editable']             =  access=='view'?false:true;
-        formElement['data']                 =  formElement['value']?formElement['value']:''
-        formElement['value']                =  formElement['value']?formElement['value']:''
-    } 
+    } else {
+        formElement['outerDivClass'] = "form-group"
+        formElement['editable'] = access == 'view' ? false : true;
+        formElement['data'] = formElement['value'] ? formElement['value'] : ''
+        formElement['value'] = formElement['value'] ? formElement['value'] : ''
+    }
 
 
-     if (!pauseCallback) {
+    if (!pauseCallback) {
         formData['formElement'] = formElement;
         formData['skipElement'] = skipElement
         formData['pauseCallback'] = pauseCallback
-        callback (formData);
+        callback(formData);
     }
 }
-    
-$.fn.loadPreviousPage = function(){
 
-    let  dataItem = $('#current-item').val();
-    if(dataItem.toLowerCase() == "vcenters"){
+$.fn.loadPreviousPage = function() {
+
+    let dataItem = $('#current-item').val();
+    if (dataItem.toLowerCase() == "vcenters") {
         $('#vcenter-table').click();
-    } else if(dataItem.toLowerCase() == "teams"){
+    } else if (dataItem.toLowerCase() == "teams") {
         $('#team-table').click();
-    }else if(dataItem.toLowerCase() == "audittrail"){
+    } else if (dataItem.toLowerCase() == "audittrail") {
         $('#audit-table').click();
-    }else if(dataItem.toLowerCase() == "sitesettings"){
+    } else if (dataItem.toLowerCase() == "sitesettings") {
         $('#sitesettings-table').click()
-    }else if(dataItem.toLowerCase() == "images"){
+    } else if (dataItem.toLowerCase() == "images") {
         $('#image-table').click()
     }
 }
-     
-$.fn.getTableData = function (opts){
-	 
-	udpdatePageHeader({'mainPage':opts.mainPage, 'subPage':opts.subPage});  
-	$("#page-content").hide();
+
+$.fn.getTableData = function(opts) {
+
+    udpdatePageHeader({ 'mainPage': opts.mainPage, 'subPage': opts.subPage });
+    $("#page-content").hide();
     $("#table-content").show();
     $("#table-tag-div").html('<div style="text-align:center"> <img src="static/images/ajax-loaders/ajax-loader-6.gif" /> </div>');
-	$("#form-content").hide();	
+    $("#form-content").hide();
     var currentTable = opts.currentTable;
     $('#table-header').html($.fn.capitalizeFirstLetter(currentTable))
     $('#current-item').val(currentTable)
     $('#current-item-type').val('table')
-    let currentTableIDField =  opts.tableIDField
-    if(opts.changeable){
+    let currentTableIDField = opts.tableIDField
+    if (opts.changeable) {
         $('#add-bttn').show();
-    }else{
+    } else {
         $('#add-bttn').hide();
     }
     let dataPh = {}
 
-    let resetFlag  = currentTable+'_reset_flag'
-    
-    $.fn.sessionGet(resetFlag,  function(getData){
-       let tableResetFlag = getData
-        $.fn.runSchemaGet('/main/schema',{qf:currentTable.toLowerCase()},function(data){
-           
-            data                        = $.fn.getObjectType(data) =='object'?data:JSON.parse(data)
-            dataPh.tabData              = [];
-            dataPh.dataCount            =  0;
-            let fieldID                 =  currentTable.toLowerCase();
-            dataPh.columns              =  Object.values(data[fieldID])
+    let resetFlag = currentTable + '_reset_flag'
 
-            let pryKey = data && data['idField']? data['idField']:opts.tableIDField;
+    $.fn.sessionGet(resetFlag, function(getData) {
+        let tableResetFlag = getData
+        $.fn.runSchemaGet('/main/schema', { qf: currentTable.toLowerCase() }, function(data) {
+
+            data = $.fn.getObjectType(data) == 'object' ? data : JSON.parse(data)
+            dataPh.tabData = [];
+            dataPh.dataCount = 0;
+            let fieldID = currentTable.toLowerCase();
+            dataPh.columns = Object.values(data[fieldID])
+
+            let pryKey = data && data['idField'] ? data['idField'] : opts.tableIDField;
             let tableInfo = {
-                tableName: currentTable
-                ,tagID:'table-tag-div'
-                ,columns:Object.values(data[fieldID])
-                ,className:'table table-striped table-bordered bootstrap-datatable datatable responsive datatable'
-                ,tableUrlParams:"qt=sel&c="+currentTable+"&df=table"
-                ,tableID:currentTable
-                ,tableUrl:'/main/data'
-                ,excludedColList:$.fn.getExcludedColumnList(currentTable,  'table')
-                ,mode:0
-                ,order: [[ 1, "asc" ]]
-                ,id:opts.tableID
-                ,name:opts.tableName
-                ,dataType:opts.dataType
-                ,opts:opts.options
-                ,isSessionSaved:true
-                ,primaryKey: pryKey
-                ,dataPlaceholder: dataPh
-                ,parentID:opts.parentId?opts.parentId:''
-                ,tableResetFlag: 1// tableResetFlag
-                ,header:opts.header
-                    
+                tableName: currentTable,
+                tagID: 'table-tag-div',
+                columns: Object.values(data[fieldID]),
+                className: 'table table-striped table-bordered bootstrap-datatable datatable responsive datatable',
+                tableUrlParams: "qt=sel&c=" + currentTable + "&df=table",
+                tableID: currentTable,
+                tableUrl: '/main/data',
+                excludedColList: $.fn.getExcludedColumnList(currentTable, 'table'),
+                mode: 0,
+                order: [
+                    [1, "asc"]
+                ],
+                id: opts.tableID,
+                name: opts.tableName,
+                dataType: opts.dataType,
+                opts: opts.options,
+                isSessionSaved: true,
+                primaryKey: pryKey,
+                dataPlaceholder: dataPh,
+                parentID: opts.parentId ? opts.parentId : '',
+                tableResetFlag: 1 // tableResetFlag
+                    ,
+                header: opts.header
+
             };
-               $.fn.drawTable(tableInfo);
+            $.fn.drawTable(tableInfo);
 
-        }); 
+        });
 
- });
+    });
 
 }
 $.fn.editEntry = function(recordInd) {
-    let  currentItem = $('#current-item').val();
-    udpdatePageHeader({'mainPage':currentItem, 'subPage':'New'});  
+    let currentItem = $('#current-item').val();
+    udpdatePageHeader({ 'mainPage': currentItem, 'subPage': 'New' });
     $("#page-content").hide();
     $("#table-content").hide();
     $("#form-content").show();
+    $("#object-details-content").hide();
     $("#form-div").html('<div style="text-align:center"> <img src="static/images/ajax-loaders/ajax-loader-6.gif" /> </div>');
     $('#current-item-type').val('form')
-    let msg = recordInd >= 0? "Loading record "+recordInd+" of "+currentItem:"Loading  form for new " + currentItem+" record";
+    let msg = recordInd >= 0 ? "Loading record " + recordInd + " of " + currentItem : "Loading  form for new " + currentItem + " record";
     $("#form-title").html(msg);
     let currentTable = currentItem.toLowerCase();
-    var idColumn  = [];
+    var idColumn = [];
 
-    $.fn.runSchemaGet('/main/schema',{qf:currentTable},function(tData){
+    $.fn.runSchemaGet('/main/schema', { qf: currentTable }, function(tData) {
 
-        tData                       = (typeof tData).toLowerCase() =='object'?tData:JSON.parse(tData);
-        let options                 = {};
-        let fieldID                 =  $.fn.capitalizeFirstLetter(currentTable);
-        options.access              = recordInd != -1 ?'edit':'new';
-        options.parentPage          = '';
-        options.currentPage         = currentTable;
-        options.currentItem         = currentTable;
-        options.tableID             = currentTable;
-        options.presentData         = '<table id="' + options.tableID + '"></table>';
-        options.tableName           = currentTable;
-        options.sourceUrl           = '/main/data';
-        options.idColumn            = idColumn.join(",");
-        options.formDetails         = '';
-        options.elementList         = new Array();
-        options.resetFlag           =  1;
-        options.tagID               = 'form-div';
-        options.sectionIDCol        = '';
-        options.editMode            =  1;
-        options.recordID            = recordInd;
-        options.class               =  ''
-        options.encType             = 'multipart/form-data'
-        options.id                  =  tData['idField'];
-        options.name                = ''
-        options.method              = 'post'
-        options.action              =  '/main/data'
-        options.type                =  recordInd >0 ?'existing':'new'
-        options.dataType            =  ''
-        options.nextPageUrl         =  '' 
-        options.allFields           =  tData[currentTable]
-        options.excludedColList     =  $.fn.getExcludedColumnList(currentTable, 'form');
-        options.headerTitle         =  recordInd!= -1 ?currentTable+': Details of record  with '+tData['idField'].toUpperCase().replaceAll('','')+':'+recordInd:currentTable+': New Record Form'
-        options.primaryKey          =  tData['idField'];
-        options.columns             =  tData[currentTable]; 
-        options.serialCount         =  tData['sc']
+        tData = (typeof tData).toLowerCase() == 'object' ? tData : JSON.parse(tData);
+        let options = {};
+        let fieldID = $.fn.capitalizeFirstLetter(currentTable);
+        options.access = recordInd != -1 ? 'edit' : 'new';
+        options.parentPage = '';
+        options.currentPage = currentTable;
+        options.currentItem = currentTable;
+        options.tableID = currentTable;
+        options.presentData = '<table id="' + options.tableID + '"></table>';
+        options.tableName = currentTable;
+        options.sourceUrl = '/main/data';
+        options.idColumn = idColumn.join(",");
+        options.formDetails = '';
+        options.elementList = new Array();
+        options.resetFlag = 1;
+        options.tagID = 'form-div';
+        options.sectionIDCol = '';
+        options.editMode = 1;
+        options.recordID = recordInd;
+        options.class = ''
+        options.encType = 'multipart/form-data'
+        options.id = tData['idField'];
+        options.name = ''
+        options.method = 'post'
+        options.action = '/main/data'
+        options.type = recordInd > 0 ? 'existing' : 'new'
+        options.dataType = ''
+        options.nextPageUrl = ''
+        options.allFields = tData[currentTable]
+        options.excludedColList = $.fn.getExcludedColumnList(currentTable, 'form');
+        options.headerTitle = recordInd != -1 ? currentTable + ': Details of record  with ' + tData['idField'].toUpperCase().replaceAll('', '') + ':' + recordInd : currentTable + ': New Record Form'
+        options.primaryKey = tData['idField'];
+        options.columns = tData[currentTable];
+        options.serialCount = tData['sc']
 
-        $.fn.getFormElementList ({'serialCount':options.serialCount,'tableName':currentTable,'cols':tData[currentTable.toLowerCase()],'excludedCols': options.excludedColList  ,'recordInd':recordInd, 'access':'edit', 'order':tData['order'], 'callback':function(eleList){
-            options.elementList     =  eleList
-            //console.log('form Elements');
-            //console.dir(eleList)
-            $.fn.drawForm(options);
-         } 
+        $.fn.getFormElementList({
+            'serialCount': options.serialCount,
+            'tableName': currentTable,
+            'cols': tData[currentTable.toLowerCase()],
+            'excludedCols': options.excludedColList,
+            'recordInd': recordInd,
+            'access': 'edit',
+            'order': tData['order'],
+            'callback': function(eleList) {
+                options.elementList = eleList
+                    //console.log('form Elements');
+                    //console.dir(eleList)
+                $.fn.drawForm(options);
+            }
         });
 
-});
+    });
 }
 
-$.fn.deleteEntry        = function(recordInd) {
-	let currentTable       = $('#current-item').val();
-	let tableContents      = currentTable;
-    currentTable           = $.fn.capitalizeFirstLetter(currentTable);
-	$.fn.runSchemaGet('/main/schema',{qf:currentTable}, function(tData) {
-        tData                  = (typeof tData).toLowerCase() =='object'?tData:JSON.parse(tData)  ;
-        let idColumn           =  tData['idField']
-        if (recordInd){
-            let hdr            =  "Removal of record from "+ currentTable
-            let msg            =  "Are you sure you want to delete entry with "+idColumn+" as "+recordInd+" from "+currentTable+"?";
-            $.fn.showConfirmDialog(hdr,msg, '$.fn.removeRecord (\''+currentTable+'\',\''+idColumn+'\','+recordInd+')'  );
+$.fn.deleteEntry = function(recordInd) {
+    let currentTable = $('#current-item').val();
+    let tableContents = currentTable;
+    currentTable = $.fn.capitalizeFirstLetter(currentTable);
+    $.fn.runSchemaGet('/main/schema', { qf: currentTable }, function(tData) {
+        tData = (typeof tData).toLowerCase() == 'object' ? tData : JSON.parse(tData);
+        let idColumn = tData['idField']
+        if (recordInd) {
+            let hdr = "Removal of record from " + currentTable
+            let msg = "Are you sure you want to delete entry with " + idColumn + " as " + recordInd + " from " + currentTable + "?";
+            $.fn.showConfirmDialog(hdr, msg, '$.fn.removeRecord (\'' + currentTable + '\',\'' + idColumn + '\',' + recordInd + ')');
         }
-    
+
     });
 };
-	
-	
-$.fn.removeRecord = function(currentTable,idColumn,recordInd){
-    let options             = {}
-    let temp                = {}
-    temp[idColumn]          = recordInd;
-    Object.assign(options, {'f': JSON.stringify(temp)});
-    Object.assign(options, {'t': 'del'});
-    Object.assign(options, {'is_form_data_valid': 'yes'});
-    Object.assign(options, {'data_item': currentTable});
-    let formTarget          ='/main/data'
 
-    $.fn.runPost(formTarget,options,function(response) {
-        response = $.fn.getObjectType(response)=="string"?JSON.parse(response):response;
+
+$.fn.removeRecord = function(currentTable, idColumn, recordInd) {
+    let options = {}
+    let temp = {}
+    temp[idColumn] = recordInd;
+    Object.assign(options, { 'f': JSON.stringify(temp) });
+    Object.assign(options, { 't': 'del' });
+    Object.assign(options, { 'is_form_data_valid': 'yes' });
+    Object.assign(options, { 'data_item': currentTable });
+    let formTarget = '/main/data'
+
+    $.fn.runPost(formTarget, options, function(response) {
+        response = $.fn.getObjectType(response) == "string" ? JSON.parse(response) : response;
         console.log('Delete Response: ')
         console.dir(response)
-        if 	(response) {
-           let  res           =  response;
-           let  header        =  res.header;
-           let  message       =  res.message;
-           let  error         =  res.error;
-           let  isSuccessful  =  res.isSuccessful;
-           let  collection    =  res.model;
-          if (isSuccessful){
-            $.fn.sessionSet(collection.toLowerCase() + "_reset_flag", 1)
-            $.fn.updateCurrentTable();
+        if (response) {
+            let res = response;
+            let header = res.header;
+            let message = res.message;
+            let error = res.error;
+            let isSuccessful = res.isSuccessful;
+            let collection = res.model;
+            if (isSuccessful) {
+                $.fn.sessionSet(collection.toLowerCase() + "_reset_flag", 1)
+                $.fn.updateCurrentTable();
 
-          }else{
-            $.fn.showMessageDialog(header,error );
-          }        
+            } else {
+                $.fn.showMessageDialog(header, error);
+            }
 
-        }}); 
+        }
+    });
 }
 
- $.fn.getTree = function() {
-  // Some logic to retrieve, or generate tree structure
-  var tree = [
-  {
-    text: "Node 1",
-    icon: "fa fa-folder",
-    nodes: [
-      {
-        text: "Sub Node 1",
-        icon: "fa fa-folder",
-        nodes: [
-          {
-            text:  "Sub Child Node 1",
-            icon:  "fa fa-folder",
-            class: "nav-level-3",
-            nodes: [
-          {
-            text:  "Sub Child Node 1 sub child",
-            icon:  "fa fa-folder",
-            class: "nav-level-3",
-             nodes: [
-          {
-            text:  "Sub Child Node 1 sub child sub child",
-            icon:  "fa fa-folder",
-            class: "nav-level-3",
-            href:  "#option/1.1.1"
-          }
+$.fn.getTree = function() {
+    // Some logic to retrieve, or generate tree structure
+    var tree = [{
+            text: "Node 1",
+            icon: "fa fa-folder",
+            nodes: [{
+                    text: "Sub Node 1",
+                    icon: "fa fa-folder",
+                    nodes: [{
+                            text: "Sub Child Node 1",
+                            icon: "fa fa-folder",
+                            class: "nav-level-3",
+                            nodes: [{
+                                text: "Sub Child Node 1 sub child",
+                                icon: "fa fa-folder",
+                                class: "nav-level-3",
+                                nodes: [{
+                                    text: "Sub Child Node 1 sub child sub child",
+                                    icon: "fa fa-folder",
+                                    class: "nav-level-3",
+                                    href: "#option/1.1.1"
+                                }]
+                            }]
+                        },
+                        {
+                            text: "Sub Child Node 2",
+                            icon: "fa fa-folder"
+                        }
+                    ]
+                },
+                {
+                    text: "Sub Node 2",
+                    icon: "fa fa-folder"
+                }
             ]
-          }
-            ]
-          },
-          {
-            text: "Sub Child Node 2",
+        },
+        {
+            text: "Node 2",
             icon: "fa fa-folder"
-          }
-        ]
-      },
-      {
-        text: "Sub Node 2",
-         icon: "fa fa-folder"
-      }
-    ]
-  },
-  {
-    text: "Node 2",
-    icon: "fa fa-folder"
-  },
-  {
-    text: "Node 3",
-    icon: "fa fa-folder"
-  },
-  {
-    text: "Node 4",
-    icon: "fa fa-folder"
-  },
-  {
-    text: "Node 5",
-    icon: "fa fa-folder"
-  }
-];
+        },
+        {
+            text: "Node 3",
+            icon: "fa fa-folder"
+        },
+        {
+            text: "Node 4",
+            icon: "fa fa-folder"
+        },
+        {
+            text: "Node 5",
+            icon: "fa fa-folder"
+        }
+    ];
     return JSON.stringify(tree);
 }
 
-$(document).ready(function(){
+$(document).ready(function() {
 
-    $('#add-item').on('click', function(e){
+    $('#add-item').on('click', function(e) {
         $.fn.editEntry(-1);
     });
 
-    $('#user-logout').on('click', function(e){
+    $('#user-logout').on('click', function(e) {
         let isConfirmed = $('#is-confirmed').val();
-        if(isConfirmed!='9999999999'){
+        if (isConfirmed != '9999999999') {
             e.preventDefault();
-        let header = '<h2 class="text-center">Logging off....</h2>';
-        let message = '<h4> Are you sure you want to log off? </h4>';
-        showConfirmDialog(header,message,"(window.location='auth/logout')");        
+            let header = '<h2 class="text-center">Logging off....</h2>';
+            let message = '<h4> Are you sure you want to log off? </h4>';
+            showConfirmDialog(header, message, "(window.location='auth/logout')");
         }
     });
 
-        $('#sitesettings-table').on('click', function(e){
-        let  currentTable = 'SiteSettings';
+    $('#sitesettings-table').on('click', function(e) {
+        let currentTable = 'SiteSettings';
         let opts = {
-                     currentTable:currentTable
-                    ,header:'Site Settings'
-                    ,tableID:'sitesettings-table-data'
-                    ,tableIDField :'_id'
-                   ,formID:'sitesettings-form'
-                   ,tableName:'SiteSettings'
-                   ,dataType :'sitesettings'
-                   ,excludedColList:$.fn.getExcludedColumnList(currentTable, 'table')
-                   ,parentID: 'table-tag-div'
-                   ,options: {isEditable:true, isViewable:true, isIndelible: true}
-                   ,changeable:true
-                   ,mainPage:'Settings'
-                   ,subPage:'Site Settings'
-                 }
-                // $.fn.showAlert(JSON.stringify(opts),'primary')
-                 $.fn.getTableData(opts)
-       
-    });  
+                currentTable: currentTable,
+                header: 'Site Settings',
+                tableID: 'sitesettings-table-data',
+                tableIDField: '_id',
+                formID: 'sitesettings-form',
+                tableName: 'SiteSettings',
+                dataType: 'sitesettings',
+                excludedColList: $.fn.getExcludedColumnList(currentTable, 'table'),
+                parentID: 'table-tag-div',
+                options: { isEditable: true, isViewable: true, isIndelible: true },
+                changeable: true,
+                mainPage: 'Settings',
+                subPage: 'Site Settings'
+            }
+            // $.fn.showAlert(JSON.stringify(opts),'primary')
+        $.fn.getTableData(opts)
 
-    $('#vcenter-table').on('click', function(e){
-        let  currentTable = 'VCenters';
+    });
+
+    $('#vcenter-table').on('click', function(e) {
+        let currentTable = 'VCenters';
         let opts = {
-                     currentTable:currentTable
-                    ,header:'VCenter Records'
-                    ,tableID:'vcenter-table-data'
-                    ,tableIDField :'_id'
-                   ,formID:'vcenter-form'
-                   ,tableName:'vcenter_mode'
-                   ,dataType :'vcenter'
-                   ,excludedColList:$.fn.getExcludedColumnList(currentTable, 'table')
-                   ,parentID: 'table-tag-div'
-                   ,options: {isEditable:true, isViewable:true, isIndelible: false}
-                   ,changeable:true
-                   ,mainPage:'Settings'
-                   ,subPage:'VCenters'
-                 }
-                 $.fn.getTableData(opts)
-       
-    });  
+            currentTable: currentTable,
+            header: 'VCenter Records',
+            tableID: 'vcenter-table-data',
+            tableIDField: '_id',
+            formID: 'vcenter-form',
+            tableName: 'vcenter_mode',
+            dataType: 'vcenter',
+            excludedColList: $.fn.getExcludedColumnList(currentTable, 'table'),
+            parentID: 'table-tag-div',
+            options: { isEditable: true, isViewable: true, isIndelible: false },
+            changeable: true,
+            mainPage: 'Settings',
+            subPage: 'VCenters'
+        }
+        $.fn.getTableData(opts)
 
-    $('#team-table').on('click', function(e){
-        let  currentTable = 'Teams';
+    });
+
+    $('#team-table').on('click', function(e) {
+        let currentTable = 'Teams';
         let opts = {
-                     currentTable:currentTable
-                    ,header:'Team Records'
-                    ,tableID:'team-table-data'
-                    ,tableIDField :'_id'
-                   ,formID:'team-form'
-                   ,tableName:'Teams'
-                   ,dataType :'team'
-                   ,excludedColList:$.fn.getExcludedColumnList(currentTable, 'table')
-                   ,parentID: 'table-tag-div'
-                   ,options: {isEditable:true, isViewable:true, isIndelible: false}
-                   ,changeable:true
-                   ,mainPage:'Settings'
-                   ,subPage:'Teams'
-                 }
-                 $.fn.getTableData(opts)
-       
-    });  
+            currentTable: currentTable,
+            header: 'Team Records',
+            tableID: 'team-table-data',
+            tableIDField: '_id',
+            formID: 'team-form',
+            tableName: 'Teams',
+            dataType: 'team',
+            excludedColList: $.fn.getExcludedColumnList(currentTable, 'table'),
+            parentID: 'table-tag-div',
+            options: { isEditable: true, isViewable: true, isIndelible: false },
+            changeable: true,
+            mainPage: 'Settings',
+            subPage: 'Teams'
+        }
+        $.fn.getTableData(opts)
 
-    
-    $('#audit-table').on('click', function(e){
-        let  currentTable = 'AuditTrail';
+    });
+
+
+    $('#audit-table').on('click', function(e) {
+        let currentTable = 'AuditTrail';
         let opts = {
-                     currentTable:currentTable
-                    ,header:'Audit Records'
-                    ,tableID:'audit-table-data'
-                    ,tableIDField :'_id'
-                   ,formID:'audit-form'
-                   ,tableName:'AuditTrail'
-                   ,dataType :'audittrail'
-                   ,excludedColList:$.fn.getExcludedColumnList(currentTable, 'table')
-                   ,parentID: 'table-tag-div'
-                   ,options: {isEditable:false, isViewable:true, isIndelible: true}
-                   ,changeable:false
-                   ,mainPage:'Settings'
-                   ,subPage:'Audit Trail'
-                 }
-                 $.fn.getTableData(opts)
-       
-    });  
+            currentTable: currentTable,
+            header: 'Audit Records',
+            tableID: 'audit-table-data',
+            tableIDField: '_id',
+            formID: 'audit-form',
+            tableName: 'AuditTrail',
+            dataType: 'audittrail',
+            excludedColList: $.fn.getExcludedColumnList(currentTable, 'table'),
+            parentID: 'table-tag-div',
+            options: { isEditable: false, isViewable: true, isIndelible: true },
+            changeable: false,
+            mainPage: 'Settings',
+            subPage: 'Audit Trail'
+        }
+        $.fn.getTableData(opts)
 
-        $('#image-table').on('click', function(e){
-        let  currentTable = 'images';
+    });
+
+    $('#image-table').on('click', function(e) {
+        let currentTable = 'images';
         let opts = {
-                     currentTable:currentTable
-                    ,header:'Image Records'
-                    ,tableID:'image-table-data'
-                    ,tableIDField :'_id'
-                   ,formID:'image-form'
-                   ,tableName:'images'
-                   ,dataType :'images'
-                   ,excludedColList:$.fn.getExcludedColumnList(currentTable, 'table')
-                   ,parentID: 'table-tag-div'
-                   ,options: {isEditable:false, isViewable:true, isIndelible: false}
-                   ,changeable:false
-                   ,mainPage:'Settings'
-                   ,subPage:'Images'
-                 }
-                 $.fn.getTableData(opts)
-       
-    });  
+            currentTable: currentTable,
+            header: 'Image Records',
+            tableID: 'image-table-data',
+            tableIDField: '_id',
+            formID: 'image-form',
+            tableName: 'images',
+            dataType: 'images',
+            excludedColList: $.fn.getExcludedColumnList(currentTable, 'table'),
+            parentID: 'table-tag-div',
+            options: { isEditable: false, isViewable: true, isIndelible: false },
+            changeable: false,
+            mainPage: 'Settings',
+            subPage: 'Images'
+        }
+        $.fn.getTableData(opts)
 
-    $('#site-table').on('click', function(e){
-        let  currentTable = 'Sites';
+    });
+
+    $('#site-table').on('click', function(e) {
+        let currentTable = 'Sites';
         let opts = {
-                     currentTable:currentTable
-                    ,header:'Sites Records'
-                    ,tableID:'site-table-data'
-                    ,tableIDField :'_id'
-                    ,formID:'site-form'
-                    ,tableName:'sites'
-                    ,dataType :'sites'
-                    ,excludedColList:$.fn.getExcludedColumnList(currentTable, 'table')
-                    ,parentID: 'table-tag-div'
-                    ,options: {isEditable:true, isViewable:true, isIndelible: false}
-                    ,changeable:true
-                    ,mainPage:'Settings'
-                    ,subPage:'sites'
-                 }
-                 $.fn.getTableData(opts)
-       
-    });  
-$.fn.drawSidebar(function(sideData){
+            currentTable: currentTable,
+            header: 'Sites Records',
+            tableID: 'site-table-data',
+            tableIDField: '_id',
+            formID: 'site-form',
+            tableName: 'sites',
+            dataType: 'sites',
+            excludedColList: $.fn.getExcludedColumnList(currentTable, 'table'),
+            parentID: 'table-tag-div',
+            options: { isEditable: true, isViewable: true, isIndelible: false },
+            changeable: true,
+            mainPage: 'Settings',
+            subPage: 'sites'
+        }
+        $.fn.getTableData(opts)
 
- $('#tree').bstreeview({ data: sideData});
+    });
+    $.fn.drawSidebar(function(sideData) {
 
-}) 
+        $('#tree').bstreeview({ data: sideData });
+
+    });
+
+    $.fn.formatByteSize = function(bSize) {
+        if (bSize <= 1024) {
+            return bSize + ' MB'
+        } else if (bSize > 1024 && bSize <= (1024 * 1024)) {
+            return (bSize / 1024).toFixed(2) + ' GB'
+        } else if (bSize > (1024 * 1024) && bSize <= (1024 * 1024 * 1024)) {
+            return (bSize / (1024 * 1024)).toFixed(2) + ' TB'
+        } else if (bSize > (1024 * 1024 * 1024) && bSize <= (1024 * 1024 * 1024 * 1024)) {
+            return (bSize / (1024 * 1024 * 1024)).toFixed(2) + ' PB'
+        } else if (bSize > (1024 * 1024 * 1024 * 1024) && bSize <= (1024 * 1024 * 1024 * 1024 * 1024)) {
+            return (bSize / (1024 * 1024 * 1024 * 1024)).toFixed(2) + ' ZB'
+        }
+    }
+
+    $.fn.formatByteSize2 = function(bSize) {
+        if (bSize <= 1024) {
+            return bSize + ' Bytes'
+        } else if (bSize > 1024 && bSize <= (1024 * 1024)) {
+            return (bSize / 1024).toFixed(2) + ' KB'
+        } else if (bSize > (1024 * 1024) && bSize <= (1024 * 1024 * 1024)) {
+            return (bSize / (1024 * 1024)).toFixed(2) + ' MB'
+        } else if (bSize > (1024 * 1024 * 1024) && bSize <= (1024 * 1024 * 1024 * 1024)) {
+            return (bSize / (1024 * 1024 * 1024)).toFixed(2) + ' GB'
+        } else if (bSize > (1024 * 1024 * 1024 * 1024) && bSize <= (1024 * 1024 * 1024 * 1024 * 1024)) {
+            return (bSize / (1024 * 1024 * 1024 * 1024)).toFixed(2) + ' TB'
+        }
+    }
+
+
+
+    $.fn.getVmDetails = function(vmId) {
+        let tableUrl = '/main/data';
+        let tableName = 'vms';
+        let searchCriteria = {}
+        let paramString = 'c=' + tableName + '&qt=sel&qf=' + JSON.stringify(searchCriteria) + "&df=table";
+        $.fn.runObjectGet(tableUrl, paramString, function(data) {
+            var vms = $.fn.getObjectType(data) == "string" ? JSON.parse(data)['tabData'] : data['tabData'];
+            let currentVm = vms.filter(function(vm) {
+                return vm._id.toLowerCase() == vmId.toLowerCase()
+            });
+            console.dir(currentVm)
+            let currentVM = currentVm[0];
+
+            $('#page-header-text').html(currentVM.vm_name);
+            let diskInfoArr = [];
+            let diskindex = 0;
+            for (let disk of currentVM.disks) {
+                let diskInfo = {};
+                Object.assign(diskInfo, { 'label': disk['label'] });
+                Object.assign(diskInfo, { 'fileName': disk['fileName'] });
+                Object.assign(diskInfo, { 'datastore': disk['datastore'] });
+                if (currentVM.disk_summary.length > 0) {
+                    Object.assign(diskInfo, { 'diskpath': currentVM.disk_summary[diskindex].diskPath });
+                    Object.assign(diskInfo, { 'capacity': $.fn.formatByteSize2(currentVM.disk_summary[diskindex].capacity) });
+                    Object.assign(diskInfo, { 'freespace': $.fn.formatByteSize2(currentVM.disk_summary[diskindex].freeSpace) });
+                }
+                diskInfoArr.push(diskInfo);
+                ++diskindex;
+            }
+            let diskInfoString = $.fn.convertToTable('Disk Management', diskInfoArr);
+            let networkInfoArr = [];
+
+            for (let portGroup of currentVM.port_groups) {
+                let network = currentVM.nics.filter(p => p.macAddress == portGroup['macaddress']);
+                d
+                let networkInfo = {};
+                Object.assign(networkInfo, { 'ip(s)': portGroup.ipaddress ? portGroup.ipaddress.filter(p => p.toString().indexOf(':') < 0).join(',') : '' });
+                Object.assign(networkInfo, { 'network': portGroup.network });
+                Object.assign(networkInfo, { 'connected': portGroup.connected });
+                if (network) {
+                    Object.assign(networkInfo, { 'label': network['label'] });
+                    Object.assign(networkInfo, { 'macaddress': network['macAddress'] });
+                    Object.assign(networkInfo, { 'summary': network['summary'] });
+
+                }
+
+                if (network) {
+                    Object.assign(networkInfo, { 'summary': network['summary'] });
+                }
+                networkInfoArr.push(networkInfo);
+
+            }
+            let networkInfoString = $.fn.convertToTable('Network Settings', networkInfoArr);
+
+
+            $("#object-details-content").html(
+                $.fn.getVMPageTemplate.replaceAll('@vmName', currentVM.vm_name)
+                .replaceAll('@vmPowerState', currentVM.powerState.toLowerCase().replace('poweredon', 'Powered On').replace('poweredoff', 'Powered Off'))
+                .replaceAll('@vmIp', currentVM.port_groups.filter(p => (p.ipaddress && p.ipaddress.toString().indexOf(':') < 0)).map(p => p.ipaddress).join(','))
+                .replaceAll('@vmOs', currentVM.os_name ? currentVM.os_name : '')
+                .replaceAll('@vmDnsName', currentVM.dns_name ? currentVM.dns_name : '')
+                .replaceAll('@vmHost', currentVM.host)
+                .replaceAll('@vmCluster', currentVM.cluster)
+                .replaceAll('@vmVcenter', currentVM.vcenter)
+                .replaceAll('@vmSite', currentVM.site)
+                .replaceAll('@vmConnectionState', currentVM.connectionState)
+                .replaceAll('@vmCustodian', currentVM.owner)
+                .replaceAll('@vmCpuReservation', currentVM.cpuReservation)
+                .replaceAll('@vmCpuMaxUsage', currentVM.maxCpuUsage ? currentVM.maxCpuUsage : 0)
+                .replaceAll('@vmNumCpu', currentVM.numCpu)
+                .replaceAll('@vmMemoryReservation', currentVM.memoryReservation)
+                .replaceAll('@vmMemoryMaxUsage', currentVM.maxMemoryUsage ? $.fn.formatByteSize(currentVM.maxMemoryUsage) : 0)
+                .replaceAll('@vmMemory', $.fn.formatByteSize(currentVM.memorySizeMB))
+                .replaceAll('@vmDiskNum', currentVM.numVirtualDisks)
+                .replaceAll('@vmDiskTotal', $.fn.formatByteSize(currentVM.disk_summary.map(p => (p.capacity) / (1024 * 1024)).reduce((sum, current) => sum + current, 0)))
+                .replaceAll('@vmStorage', $.fn.formatByteSize(currentVM.disk_summary.map(p => (p.capacity - p.freeSpace) / (1024 * 1024)).reduce((sum, current) => sum + current, 0)))
+                .replaceAll('@vmDatastores', currentVM.datastores.join(','))
+                .replaceAll('@vmVmxFile', currentVM.vmPathName)
+                .replaceAll('@vmNicNum', currentVM.numEthernetCards)
+                .replaceAll('@vmPortGroups', currentVM.port_groups.map(p => p.network).join(','))
+                .replaceAll('@DiskInfo', diskInfoString)
+                .replaceAll('@NetworkInfo', networkInfoString)
+            );
+            // testContainer.map(test=>test.value).reduce((sum, current)=> sum + current,0) 
+            $("#page-content").hide();
+            $("#table-content").hide();
+            $("#form-content").hide();
+            $("#object-details-content").show();
+
+
+        });
+
+    }
+
+    $.fn.getHostDetails = function(hostId){
+        
+            $("#page-content").hide();
+            $("#table-content").hide();
+            $("#form-content").hide();
+            $("#object-details-content").show();
+
+    }
 
 
 });

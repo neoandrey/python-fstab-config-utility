@@ -69,9 +69,11 @@
           </div>
           <!-- /.col -->
         </div>
+        {% if options.user_count == 0 %}
          <div class="row d-flex">
           <a href="{{ url_for('auth.register') }}" class="pull-right">Setup Admin user </a>
           </div>
+        {% endif %}
       </form>
 
       

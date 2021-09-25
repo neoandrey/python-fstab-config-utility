@@ -17,12 +17,10 @@ def _set_task_progress(progress):
         job.meta['progress'] = progress
         job.save_meta()
         task = Task.query.get(job.get_id())
-        task.user.add_notification('task_progress', {'task_id': job.get_id(),
-                                                     'progress': progress})
+        task.user.add_notification('task_progress', {'task_id': job.get_id(),  'progress': progress})
         if progress >= 100:
             task.complete = True
         db.session.commit()
-
 
 def export_posts(user_id):
     try:

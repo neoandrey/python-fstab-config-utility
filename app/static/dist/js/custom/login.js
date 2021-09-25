@@ -8,7 +8,7 @@ $.fn.submitLogin = function(e){
     }
 }
 $('#password').on('keypress',function(e){
-   if($('#password').val().length() >=6){
+   if($('#password').val() && $('#password').val().length >=6){
         $('#password-errors').html('');
         $.fn.submitLogin();
    }

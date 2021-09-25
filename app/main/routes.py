@@ -1,11 +1,12 @@
 from datetime import datetime
 import flask
-from flask import render_template, flash, redirect, url_for, request, g, jsonify, current_app,abort, send_from_directory
+from flask import render_template, flash, redirect, url_for, request, g, jsonify, current_app,abort, send_from_directory,session
 from werkzeug.utils import secure_filename
 from flask_login import current_user, login_required
 from flask_babel import _, get_locale
 #from guess_language import guess_language
-from app import db, moment
+from app import moment,db
+from app import couchdbmanager,get_debug_template
 from app.main.forms import LoginForm,VCenterForm #, EditProfileForm, EmptyForm, PostForm, SearchForm, MessageForm
 from app.models import Users, Teams, Roles, Vcenters, AuditTrail, SiteSettings,Images,vms,Datastores,Clusters, Hosts,Sites #, Post, Message, Notification
 #from app.translate import translate
@@ -22,24 +23,130 @@ from PIL import Image,ImageEnhance
 ##        g.search_form = SearchForm()
 #    g.locale = str(get_locale())
 
+def get_items(records):
+    record_items = []
+    if isinstance(records,list):
+        for record in records:
+            record_items.append(record.__dict__['_data'])
+    else:
+        record_items.append(records.__dict__['_data'])
+    return record_items
 
+def finder(model_type, fields=None, sort_hash_list=None):
+    mango = None
+    if fields:
+        mango = {'selector': {'type': model_type},'fields': fields,'sort_list':sort_hash_list} if sort_hash_list  else {'selector': {'type': model_type},'fields': fields}
+    else:
+        mango = {'selector': {'type': model_type},'sort_list':sort_hash_list}      if sort_hash_list  else {'selector': {'type': model_type}}  
+    return  db.find(mango)                        
+              
+def data_retriever(model,action,display_format,query_fields):
+    response  =  None
+    print(f'query_fields: {query_fields}')
+    if model == 'vcenters':
+        if action=='sel' and display_format=='form':
+            #results          = Vcenters.objects(__raw__=query_fields).first() if  query_fields is not None else []
+            results          = Vcenters().fetch(query_fields) if  query_fields is not None else []
+            print('creationDate: {}'.format(results['creationDate']))
+            print('lastModifiedDate: {}'.format(results['lastModifiedDate']))
+            results['creationDate']      = str( (results['creationDate']))
+            results['lastModifiedDate']  = str((results['lastModifiedDate']))
+            response =  {'columns':(Vcenters.get_schema())[model],'tabData':results,'dataCount':1 }
+        elif action=='sel' and display_format=='table':
+            vcenter_records = get_items(Vcenters().get())
+            response = {'columns':(Vcenters.get_schema())[model],'tabData':vcenter_records,'dataCount':(Vcenters().get_record_count())}
+    elif model == 'teams':
+        if action=='sel' and display_format=='form':
+            results   = Teams().fetch(query_fields) if  query_fields is not None else []
+            response =  {'columns':(Teams.get_schema())[model],'tabData':results,'dataCount':1 }
+        elif action=='sel' and display_format=='table':
+            team_records = get_items(Teams().get())
+            response ={'columns':(Teams.get_schema())[model],'tabData':team_records,'dataCount':(Teams().get_record_count())}   
+    elif model == 'audittrail':
+        if action=='sel' and display_format=='form':
+            results   = AuditTrail().fetch(query_fields) if  query_fields is not None else []
+            response =  {'columns':(AuditTrail.get_schema())[model],'tabData':results,'dataCount':1 }
+        elif action=='sel' and display_format=='table':
+            audit_records = get_items(AuditTrail().get())
+            response = {'columns':(AuditTrail.get_schema())[model],'tabData':audit_records,'dataCount':(AuditTrail().get_record_count())}                   
+    elif model == 'sitesettings':
+        if action=='sel' and display_format=='form':
+            results   = SiteSettings().fetch(query_fields) if  query_fields is not None else []
+            response = {'columns':(SiteSettings.get_schema())[model],'tabData':results,'dataCount':1 }
+        elif action=='sel' and display_format=='table':
+            site_records = get_items(SiteSettings().get())
+            response = {'columns':(SiteSettings.get_schema())[model],'tabData':site_records,'dataCount':(SiteSettings().get_record_count())}
+    elif model =='images':
+        if action=='sel' and display_format=='form':
+            results  = Images().fetch(query_fields) if  query_fields is not None else []
+            response =  {'columns':(Images.get_schema())[model],'tabData':results,'dataCount':1 }
+        elif action=='sel' and display_format=='table':
+            image_record = get_items(Images().get())
+            response = {'columns':(Images.get_schema())[model],'tabData':image_record,'dataCount':(Images().get_record_count())}               
+    elif model =='vms':
+        if action=='sel' and display_format=='form':
+            results         = vms().fetch(query_fields) if  query_fields is not None else []
+            response =  {'columns':(vms.get_schema())[model],'tabData':results,'dataCount':1 }
+        elif action=='sel' and display_format=='table':
+            image_record = get_items(vms().get())
+            print(image_record)
+            response = {'columns':(vms.get_schema())[model],'tabData':image_record,'dataCount':(vms().get_record_count())}              
+    elif model =='sites':
+        if action=='sel' and display_format=='form':
+            results         = Sites().fetch(query_fields) if  query_fields is not None else []
+            response        =  {'columns':(Sites.get_schema())[model],'tabData':results,'dataCount':1 }
+        elif action=='sel' and display_format=='table':
+            image_record = get_items(Sites().get())
+            response = {'columns':(Sites.get_schema())[model],'tabData':image_record,'dataCount':(Sites().get_record_count())}
+    elif model =='clusters':
+        if action=='sel' and display_format=='form':
+            results         = Clusters().fetch(query_fields) if  query_fields is not None else []
+            response =    {'columns':(Clusters.get_schema())[model],'tabData':results,'dataCount':1 }
+        elif action=='sel' and display_format=='table':
+            clusters = get_items(Clusters().get())
+            response = {'columns':(Clusters.get_schema())[model],'tabData':clusters,'dataCount':(Clusters().get_record_count())}  						
+    elif model =='datastores':
+        if action=='sel' and display_format=='form':
+            results         = Datastores().fetch(query_fields).first() if  query_fields is not None else []
+            response =  {'columns':(Datastores.get_schema())[model],'tabData':results,'dataCount':1 }
+        elif action=='sel' and display_format=='table':
+            image_record = get_items(Datastores.get())
+            response = {'columns':(Datastores.get_schema())[model],'tabData':image_record,'dataCount':(Datastores().get_record_count())}
+    elif model =='hosts':
+        if action=='sel' and display_format=='form':
+            results         = Hosts().fetch(query_fields) if  query_fields is not None else []
+            response        =  {'columns':(Hosts.get_schema())[model],'tabData':results,'dataCount':1 }
+        elif action=='sel' and display_format=='table':
+            image_record = get_items(Hosts().get())
+            response     = {'columns':(Hosts.get_schema())[model],'tabData':image_record,'dataCount':(Hosts().get_record_count())}
+    return response
 @bp.route('/main/dataselect', methods=['GET'])
 @bp.route('/dataselect',methods=['GET'] )
 @login_required
 def get_data_for_select():
-    model              =  request.args.get('c').lower()
-    key_field          =  request.args.get('k').lower()
-    value_field        =  request.args.get('v').lower()	
-    record_list        =  []
+    model              =  request.args.get('c').lower()  if request.args.get('c') else None
+    key_field          =  request.args.get('k').lower()  if request.args.get('k') else None
+    value_field        =  request.args.get('v').lower()	 if request.args.get('v') else None
+    action             =  request.args.get('qt')         if request.args.get('qt') else None
+    display_format     =  request.args.get('df')         if request.args.get('df') else None
+    query_fields       =  request.args.get('qf')         if request.args.get('qf') else None
+    table_data         =  {}
+    all_records        =  []
     data_count         =  0 
-
-    print('model: {}'.format(model))
-    print('key_field: {}'.format(key_field))
-    print('value_field: {}'.format(value_field))
-    if model == 'sites':
-        all_records = Sites.objects.all()
-        data_count  = (Sites.get_record_count())
-    return jsonify({'tabData':all_records,'dataCount':data_count})  
+    if  ',' not in model:
+        print('model: {}'.format(model))
+        print('key_field: {}'.format(key_field))
+        print('value_field: {}'.format(value_field))
+        if model == 'sites':
+            all_records = Sites.get()
+            data_count  = (Sites.get_record_count())
+        return jsonify({'tabData':all_records,'dataCount':data_count}) 
+    else:
+        tables = model.split(',')
+        for table in tables:
+            table = table.lower()
+            table_data[table] = data_retriever(table,action,display_format,query_fields)
+        return jsonify(table_data) 
 
 @bp.route('/main/images', methods=['GET', 'POST'])
 @bp.route('/images', methods=['GET', 'POST'])
@@ -54,7 +161,7 @@ def process_image_request():
     for i in request.files.keys():
        print('file keys:{k} => value:{v}'.format(k=i,v=request.files[i]))
     try:
-        if current_user.is_authenticated:
+        if session['current_user'].is_authenticated:
           method                 =  request.method.lower()      
           action                 =  request.form['action'] if request.form['action'] else None
           action                 =  request.form['qt']     if None== action and request.form['qt'] else action
@@ -81,28 +188,30 @@ def process_image_request():
                 if not os.path.exists(image_folder):
                     os.mkdir(image_folder)
                 uploaded_file_path = os.path.join(image_folder, filename)
-                record_index     =  Images.get_last_record_id() +1
-                image            =  Images(id       = record_index,
-                    fileName               =  filename,
-                    fileFormat             =  fileFormat,
-                    fileURL                =  os.path.sep+uploaded_file_path.split(os.path.sep)[-4]+os.path.sep+uploaded_file_path.split(os.path.sep)[-3]+os.path.sep+uploaded_file_path.split(os.path.sep)[-2]+os.path.sep+uploaded_file_path.split(os.path.sep)[-1],
-                    fileSize               =  fileSize,
-                    dimension              =  request.form['dimensions'],
-                    sourceURL              =  request.form['sourceUrl'] ,
-                    lastModifiedDate       =  lastModifiedDate
-                    )
-                image.save()
+                record_index     =  Images().get_last_record_id() +1
+                image            =  Images().init_attributes(
+                            {'id': record_index,
+                            'fileName':  filename,
+                            'fileFormat':  fileFormat,
+                            'fileURL':  os.path.sep+uploaded_file_path.split(os.path.sep)[-4]+os.path.sep+uploaded_file_path.split(os.path.sep)[-3]+os.path.sep+uploaded_file_path.split(os.path.sep)[-2]+os.path.sep+uploaded_file_path.split(os.path.sep)[-1],
+                            'fileSize':  fileSize,
+                            'dimension':  request.form['dimensions'],
+                            'sourceURL':  request.form['sourceUrl'] ,
+                            'lastModifiedDate':  lastModifiedDate
+                            }
+                    ).save()
                 uploaded_file.save(uploaded_file_path)
                 image_path             =  os.path.sep+uploaded_file_path.split(os.path.sep)[-4]+os.path.sep+uploaded_file_path.split(os.path.sep)[-3]+os.path.sep+uploaded_file_path.split(os.path.sep)[-2]+os.path.sep+uploaded_file_path.split(os.path.sep)[-1]
                 model                  =  'Images'
-                trailIndex             =  AuditTrail.get_last_record_id() +1
+                trailIndex             =  AuditTrail().get_last_record_id() +1
                 query_fields           =  {'id':record_index}
                 description_info       =  'Addition of new record to {m}'.format(m=model)  
                 change_type            =  'INSERT'
-                oldData				  =   {}
-                newData 			      =   image.to_mongo()
-                auditTrail                =   AuditTrail(id=trailIndex,description= description_info, oldData=oldData, newData=newData,affectedTable=model,changeTime=str(datetime.utcnow()),changeType=change_type,userName=current_user.username,userID=current_user.id,recordIdentifier=query_fields )
-                auditTrail.save()
+                oldData				   =   {}
+                newData 			   =   image.__dict__
+                AuditTrail().init_attributes({
+                'id':trailIndex,'description':description_info,'oldData':oldData,'newData':newData,'affectedTable':model,'changeTime':str(datetime.utcnow()),'changeType':change_type,'userName':current_user.username,'userID':current_user.id,'recordIdentifier':query_fields
+                }).save()
                 image                     = Image.open(uploaded_file_path)
                 resized_image             = image.resize((dimensions['width'], dimensions['height']))
                 sharp_image               = ImageEnhance.Sharpness(resized_image)
@@ -118,16 +227,16 @@ def process_image_request():
             elif  action == 'del':
                 model                    =  'Images'
                 action                   =  'del'
-                trailIndex               =  AuditTrail.get_last_record_id() +1
+                trailIndex               =  AuditTrail().get_last_record_id() +1
                 newData				     =   {}
                 description_info         =  'Removal of {m} record with details: {d} '.format(m=model,d=query_fields)
                 change_type              =  'DELETE'
-                oldData              	 =  image.to_mongo() 
-                auditTrail               =  AuditTrail(id=trailIndex,description= description_info, oldData=oldData, newData=newData,affectedTable=model,changeTime=str(datetime.utcnow()),changeType=change_type,userName=current_user.username,userID=current_user.id,recordIdentifier=query_fields )
-                auditTrail.save()
+                oldData              	 =  image.__dict__
+                auditTrail               =  AuditTrail().init_attributes ( {
+                            'id':trailIndex,'description':description_info,'oldData':oldData,'newData':newData,'affectedTable':model,'changeTime':str(datetime.utcnow()),'changeType':change_type,'userName':session['current_user'].username,'userID':session['current_user'].id,'recordIdentifier':query_fields
+                } ).save()
                         
-                image					 = Images.objects(__raw__=query_fields).first()
-                image.delete()
+                image					 = Images.fetch(query_fields).delete()
                 response['message']      = 'Images with  ID \'{}\' has been successfully removed'.format(record_index)
                 response['isSuccessful'] = True
                 response['model']        = 'Images'
@@ -214,8 +323,8 @@ def process_data_request():
                 query_fields     =  json.loads(request.args.get('qf')) if request.args.get('qf') != None  else None
             print('action: '+action)
             print('model: '+model)
-            trailIndex           =  AuditTrail.get_last_record_id() +1
             if action  in ['add','udt', 'del']:
+                trailIndex           =  AuditTrail().get_last_record_id() +1
                 if action            !='add':
                   query_fields       =  json.loads(query_fields)
                   if   model         == 'vcenters':
@@ -236,32 +345,32 @@ def process_data_request():
                     description_info  =  'Removal of {m} record with details: {d} '.format(m=model,d=query_fields)
                     change_type       =  'DELETE'
                 print('logging change...')
-                oldData=  oldData.to_mongo() if oldData else {}
-                auditTrail            =  AuditTrail(id=trailIndex,description= description_info, oldData=oldData, newData=newData,affectedTable=model,changeTime=str(datetime.utcnow()),changeType=change_type,userName=current_user.username,userID=current_user.id,recordIdentifier=query_fields )
-                auditTrail.save()
-        
+                #oldData=  oldData.to_mongo() if oldData else {}
+                oldData=  oldData.__dict__ if oldData else {}
+                AuditTrail().init_attributes({'id':trailIndex,'description': description_info,' oldData':oldData,' newData':newData,'affectedTable':model,'changeTime':str(datetime.utcnow()),'changeType':change_type,'userName':session['current_user'].username,'userID':session['current_user'].id,'recordIdentifier':query_fields} ).save()               
             if method == 'post':
                 is_form_valid =  True if is_valid =='yes' else False
                 if is_form_valid:
                     if action == 'add':
                         if model =='vcenters':
-                            print('last record if: '+str(Vcenters.get_last_record_id()))
-                            record_index     =  Vcenters.get_last_record_id() +1
+                            print('last record if: '+str(Vcenters().get_last_record_id()))
+                            record_index     =  Vcenters().get_last_record_id() +1
                             print('record index: {}'.format(record_index))
-                            vcenter          = Vcenters(id       = record_index,
-                            name             =  request.form['pl[name]'],
-                            ipAddress        =  request.form['pl[ipaddress]'],
-                            version          =  request.form['pl[version]'],
-                            username         =  request.form['pl[username]'],
-                            password         =  request.form['pl[password]'],
-                            serviceUri       =  request.form['pl[serviceuri]'],
-                            port             =  request.form['pl[port]'],
-                            productLine      =  request.form['pl[productline]'],
-                            creationDate     =  request.form['pl[creationdate]'],
-                            site             =  request.form['pl[site]'],
-                            lastModifiedDate =  request.form['pl[lastmodifieddate]'],
-                            active           = True if str(request.form['pl[active]']).lower()== 'yes' else False)
-                            vcenter.save()
+                            Vcenters(
+                                {'id': record_index,
+                                'name':  request.form['pl[name]'],
+                                'ipAddress': request.form['pl[ipaddress]'],
+                                'version': request.form['pl[version]'],
+                                'username':  request.form['pl[username]'],
+                                'password':  request.form['pl[password]'],
+                                'serviceUri':  request.form['pl[serviceuri]'],
+                                'port':  request.form['pl[port]'],
+                                'productLine':  request.form['pl[productline]'],
+                                'creationDate':  request.form['pl[creationdate]'],
+                                'site':  request.form['pl[site]'],
+                                'lastModifiedDate':  request.form['pl[lastmodifieddate]'],
+                                'active':  True if str(request.form['pl[active]']).lower()== 'yes' else False }
+                            ).init_attributes( ).save()
                             response['message']      = 'A new record  has been successfully added to VCenters'
                             response['isSuccessful'] = True
                             response['model']        = 'VCenters'
@@ -270,15 +379,16 @@ def process_data_request():
                             response['record_index'] = record_index
                             return jsonify(response)
                         elif (model =='teams'):
-                            print('last record if: '+str(Teams.get_last_record_id()))
-                            record_index     =  Teams.get_last_record_id() +1
+                            print('last record if: y'+str(Teams().get_last_record_id()))
+                            record_index     =  Teams().get_last_record_id() +1
                             print('record index: {}'.format(record_index))
-                            team             =  Teams(id       = record_index,
-                            team_name             =  request.form['pl[team_name]'],
-                            team_description      =  request.form['pl[team_description]'],
-                            creationDate     =  request.form['pl[creationdate]'],
-                            lastModifiedDate =  request.form['pl[lastmodifieddate]'])
-                            team.save()
+                            Teams().init_attributes(
+                                {'id'       :record_index,
+                                'team_name': request.form['pl[team_name]'],
+                                'team_description': request.form['pl[team_description]'],
+                                'creationDate': request.form['pl[creationdate]'],
+                                'lastModifiedDate': request.form['pl[lastmodifieddate]']}
+                            ).save()
                             response['message']      = 'A new record  has been successfully added to Teams'
                             response['isSuccessful'] =  True
                             response['model']        = 'Teams'
@@ -287,22 +397,24 @@ def process_data_request():
                             response['record_index'] = record_index
                             return jsonify(response)
                         elif (model =='sitesettings'):
-                            print('last record if: '+str(SiteSettings.get_last_record_id()))
-                            record_index     =  SiteSettings.get_last_record_id() +1
+                            print('last record if: '+str(SiteSettings().get_last_record_id()))
+                            record_index     =  SiteSettings().get_last_record_id() +1
                             print('record index: {}'.format(record_index))
-                            siteSetting              =  SiteSettings(id       = record_index,
-                            siteName                 =  request.form['pl[sitename]'],
-                            siteTitle                =  request.form['pl[sitetitle]'],
-                            siteLogo         	     =  request.form['pl[sitelogo]'],
-                            ldapServer               =  request.form['pl[ldapserver]'], 
-                            ldapUser                 =  request.form['pl[ldapuser]'], 
-                            ldapPassword             =  request.form['pl[ldappassword]'],
-                            emailServer              =  request.form['pl[emailserver]'], 
-                            emailUser                =  request.form['pl[emailuser]'],
-                            emailPassword            =  request.form['pl[emailpassword]'],
-                            lastModifiedDate         =  request.form['pl[lastmodifieddate]']
-                                )
-                            siteSetting.save()
+                            SiteSettings(
+                                 {                          
+                                        'id': record_index,
+                                        'siteName':  request.form['pl[sitename]'],
+                                        'siteTitle':  request.form['pl[sitetitle]'],
+                                        'siteLogo':  request.form['pl[sitelogo]'],
+                                        'ldapServer':  request.form['pl[ldapserver]'], 
+                                        'ldapUser':  request.form['pl[ldapuser]'], 
+                                        'ldapPassword':  request.form['pl[ldappassword]'],
+                                        'emailServer':  request.form['pl[emailserver]'], 
+                                        'emailUser':  request.form['pl[emailuser]'],
+                                        'emailPassword':  request.form['pl[emailpassword]'],
+                                        'lastModifiedDate':  request.form['pl[lastmodifieddate]']
+                                    }
+                                ).save()
                             response['message']      = 'A new record  has been successfully added to SiteSettings'
                             response['isSuccessful'] =  True
                             response['model']        = 'SiteSettings'
@@ -311,14 +423,17 @@ def process_data_request():
                             response['record_index'] = record_index
                             return jsonify(response)
                         elif (model =='sites'):
-                            print('last record if: '+str(Sites.get_last_record_id()))
-                            record_index     =  Sites.get_last_record_id() +1
+                            print('last record if: '+str(Sites().get_last_record_id()))
+                            record_index     =  Sites().get_last_record_id() +1
                             print('record index: {}'.format(record_index))
-                            site                     =  Sites(id       = record_index,
-                            siteName                 =  request.form['pl[sitename]'],
-                            lastModifiedDate         =  request.form['pl[lastmodifieddate]']
-                                )
-                            site.save()
+                            print('DATE {}'.format(request.form['pl[lastmodifieddate]']))
+                            Sites().init_attributes(
+                                    {                          
+                                    'id': record_index,
+                                    'siteName':  request.form['pl[sitename]'],
+                                    'lastModifiedDate':  request.form['pl[lastmodifieddate]']
+                                    }
+                            ).save()
                             response['message']      = 'A new record  has been successfully added to Sites'
                             response['isSuccessful'] =  True
                             response['model']        = 'Sites'
@@ -330,19 +445,22 @@ def process_data_request():
                         print('updating record')
                         if (model =='vcenters'):
                            
-                            vcenter                 =  Vcenters.objects(__raw__=query_fields).update( 
-                            set__name               =  request.form['pl[name]'],
-                            set__ipAddress          =  request.form['pl[ipaddress]'],
-                            set__version            =  request.form['pl[version]'],
-                            set__username           =  request.form['pl[username]'],
-                            set__password           =  request.form['pl[password]'],
-                            set__serviceUri         =  request.form['pl[serviceuri]'],
-                            set__port               =  int(request.form['pl[port]'].strip()),
-                            set__productLine        =  request.form['pl[productline]'],
-                            set__site               =  request.form['pl[site]'],
-                            set__lastModifiedDate   =  datetime.utcnow(),
-                            set__active             =  True if str(request.form['pl[active]']).lower()== 'yes' else False               
-                            )
+                            vcenter                 =  Vcenters().fetch(query_fields).init_attributes( 
+                                {                          
+                                'name':  request.form['pl[name]'],
+                                'ipAddress':  request.form['pl[ipaddress]'],
+                                'version':  request.form['pl[version]'],
+                                'username':  request.form['pl[username]'],
+                                'password':  request.form['pl[password]'],
+                                'serviceUri':  request.form['pl[serviceuri]'],
+                                'port':  int(request.form['pl[port]'].strip()),
+                                'productLine':  request.form['pl[productline]'],
+                                'site':  request.form['pl[site]'],
+                                'lastModifiedDate':  datetime.utcnow(),
+                                'active':  True if str(request.form['pl[active]']).lower() == 'yes' else False  
+                            }
+                            ).save()
+
                             response['message']      = 'The details of the \'{}\' have been successfully updated'.format(request.form['pl[name]'])
                             response['isSuccessful'] = True
                             response['model']        = 'VCenters'
@@ -350,11 +468,14 @@ def process_data_request():
                             response['error']        = None
                             response['record_index'] = query_fields['_id']
                         elif (model =='teams'):
-                            team      				=  Teams.objects(__raw__=query_fields).update( 
-                            set__team_name               =  request.form['pl[team_name]'],
-                            set__team_description        =  request.form['pl[team_description]'],
-                            set__lastModifiedDate   =  datetime.utcnow(),              
-                            )
+                            team      				=  Teams().fetch(query_fields).init_attributes( 
+                                {                          
+                                'team_name':  request.form['pl[team_name]'],
+                                'team_description':  request.form['pl[team_description]'],
+                                'lastModifiedDate':  datetime.utcnow()
+                                }
+             
+                            ).save()
                             response['message']      = 'The details of the \'{}\' have been successfully updated'.format(request.form['pl[name]'])
                             response['isSuccessful'] = True
                             response['model']        = 'teams'
@@ -362,18 +483,21 @@ def process_data_request():
                             response['error']        = None
                             response['record_index'] = query_fields['_id']
                         elif (model =='sitesettings'):
-                            siteSettings      		 =  SiteSettings.objects(__raw__=query_fields).update( 
-                            set__siteName            =  request.form['pl[sitename]'],
-                            set__siteTitle           =  request.form['pl[sitetitle]'],
-                            set__siteLogo            =  request.form['pl[sitelogo]'], 
-							set__ldapServer          =  request.form['pl[ldapserver]'], 
- 							set__ldapUser            =  request.form['pl[ldapuser]'],
-                            set__ldapPassword        =  request.form['pl[ldappassword]'],
-						    set__emailServer         =  request.form['pl[emailserver]'],
-							set__emailUser           =  request.form['pl[emailuser]'],
-							set__emailPassword       =  request.form['pl[emailpassword]'],
-							set__lastModifiedDate    =  request.form['pl[lastmodifieddate]']							
-                            )
+                            siteSettings      		 =  SiteSettings().fetch(query_fields).init_attributes( 
+                                {                          
+                                        'siteName':  request.form['pl[sitename]'],
+                                        'siteTitle':  request.form['pl[sitetitle]'],
+                                        'siteLogo':  request.form['pl[sitelogo]'], 
+                                        'ldapServer':  request.form['pl[ldapserver]'], 
+                                        'ldapUser':  request.form['pl[ldapuser]'],
+                                        'ldapPassword':  request.form['pl[ldappassword]'],
+                                        'emailServer':  request.form['pl[emailserver]'],
+                                        'emailUser':  request.form['pl[emailuser]'],
+                                        'emailPassword':  request.form['pl[emailpassword]'],
+                                        'lastModifiedDate':  request.form['pl[lastmodifieddate]']	
+                              }
+
+                            ).save()
                             response['message']      = 'The details of the \'{}\' have been successfully updated'.format(request.form['pl[sitename]'])
                             response['isSuccessful'] = True
                             response['model']        = 'SiteSettings'
@@ -381,10 +505,10 @@ def process_data_request():
                             response['error']        = None
                             response['record_index'] = query_fields['_id'] 
                         elif(model =='sites'):
-                            siteSettings      		 =  Sites.objects(__raw__=query_fields).update( 
-                            set__siteName            =  request.form['pl[sitename]'],
-                            set__lastModifiedDate    =  request.form['pl[lastmodifieddate]']							
-                            )
+                            siteSettings      		 =  Sites.fetch(query_fields).init_attributes( {
+                            'siteName'  :request.form['pl[sitename]'],
+                            'lastModifiedDate'  :  request.form['pl[lastmodifieddate]']	}						
+                            ).save()
                             response['message']      = 'The details of the \'{}\' have been successfully updated'.format(request.form['pl[sitename]'])
                             response['isSuccessful'] = True
                             response['model']        = 'Sites'
@@ -396,8 +520,7 @@ def process_data_request():
                         print('deleting record...')
                         record_index = query_fields['_id']
                         if (model =='vcenters'):
-                            vcenter   = Vcenters.objects(__raw__=query_fields).first()
-                            vcenter.delete()
+                            Vcenters().fetch(query_fields).delete()
                             response['message']      = 'VCenters with  ID \'{}\' has been successfully removed'.format(record_index)
                             response['isSuccessful'] = True
                             response['model']        = 'VCenters'
@@ -405,8 +528,7 @@ def process_data_request():
                             response['error']        = None
                             response['record_index'] = record_index
                         elif (model =='teams'):
-                            team   = Teams.objects(__raw__=query_fields).first()
-                            team.delete()
+                            team   = Teams().fetch(query_fields).delete()
                             response['message']      = 'Teams with  ID \'{}\' has been successfully removed'.format(record_index)
                             response['isSuccessful'] = True
                             response['model']        = 'Teams'
@@ -414,7 +536,7 @@ def process_data_request():
                             response['error']        = None
                             response['record_index'] = record_index          
                         elif (model =='sites'):
-                            team   = Sites.objects(__raw__=query_fields).first()
+                            team   = Sites.fetch(query_fields).delete()
                             team.delete()
                             response['message']      = 'Sites with  ID \'{}\' has been successfully removed'.format(record_index)
                             response['isSuccessful'] = True
@@ -428,88 +550,10 @@ def process_data_request():
                 print("action: {}".format(action))
                 print("query_fields: {}".format(query_fields))
                 print("display_format: {}".format(display_format))
-                if model == 'vcenters':
-                    if action=='sel' and display_format=='form':
-                        results          = Vcenters.objects(__raw__=query_fields).first() if  query_fields is not None else []
-                        print('creationDate: {}'.format(results['creationDate']))
-                        print('lastModifiedDate: {}'.format(results['lastModifiedDate']))
-                        results['creationDate']      = str( (results['creationDate']))
-                        results['lastModifiedDate']  = str((results['lastModifiedDate']))
-                        return  jsonify({'columns':(Vcenters.get_schema())[model],'tabData':results,'dataCount':1 })
-                    elif action=='sel' and display_format=='table' :
-                        vcenter_records = Vcenters.objects.all()
-                        return jsonify({'columns':(Vcenters.get_schema())[model],'tabData':vcenter_records,'dataCount':(Vcenters.get_record_count())})
-                elif model == 'teams':
-                    if action=='sel' and display_format=='form':
-                        results   = Teams.objects(__raw__=query_fields).first() if  query_fields is not None else []
-                        return  jsonify({'columns':(Teams.get_schema())[model],'tabData':results,'dataCount':1 })
-                    elif action=='sel' and display_format=='table' :
-                        team_records = Teams.objects.all()
-                        return jsonify({'columns':(Teams.get_schema())[model],'tabData':team_records,'dataCount':(Teams.get_record_count())})   
-                elif model == 'audittrail':
-                    if action=='sel' and display_format=='form':
-                        results   = AuditTrail.objects(__raw__=query_fields).first() if  query_fields is not None else []
-                        return  jsonify({'columns':(AuditTrail.get_schema())[model],'tabData':results,'dataCount':1 })
-                    elif action=='sel' and display_format=='table' :
-                        audit_records = AuditTrail.objects.all()
-                        return jsonify({'columns':(AuditTrail.get_schema())[model],'tabData':audit_records,'dataCount':(AuditTrail.get_record_count())})                    
-                elif model == 'sitesettings':
-                    if action=='sel' and display_format=='form':
-                        results   = SiteSettings.objects(__raw__=query_fields).first() if  query_fields is not None else []
-                        return  jsonify({'columns':(SiteSettings.get_schema())[model],'tabData':results,'dataCount':1 })
-                    elif action=='sel' and display_format=='table' :
-                        site_records = SiteSettings.objects.all()
-                        return jsonify({'columns':(SiteSettings.get_schema())[model],'tabData':site_records,'dataCount':(SiteSettings.get_record_count())}) 
-                elif model =='images':
-                    if action=='sel' and display_format=='form':
-                        results         = Images.objects(__raw__=query_fields).first() if  query_fields is not None else []
-                        return  jsonify({'columns':(Images.get_schema())[model],'tabData':results,'dataCount':1 })
-                    elif action=='sel' and display_format=='table' :
-                        image_record = Images.objects.all()
-                        return jsonify({'columns':(Images.get_schema())[model],'tabData':image_record,'dataCount':(Images.get_record_count())})                
-                elif model =='vms':
-                    if action=='sel' and display_format=='form':
-                        results         = vms.objects(__raw__=query_fields).first() if  query_fields is not None else []
-                        return  jsonify({'columns':(vms.get_schema())[model],'tabData':results,'dataCount':1 })
-                    elif action=='sel' and display_format=='table' :
-                        image_record = vms.objects.all()
-                        print(image_record)
-                        return jsonify({'columns':(vms.get_schema())[model],'tabData':image_record,'dataCount':(vms.get_record_count())})              
-                elif model =='sites':
-                    if action=='sel' and display_format=='form':
-                        results         = Sites.objects(__raw__=query_fields).first() if  query_fields is not None else []
-                        return  jsonify({'columns':(Sites.get_schema())[model],'tabData':results,'dataCount':1 })
-                    elif action=='sel' and display_format=='table' :
-                        image_record = Sites.objects.all()
-                        return jsonify({'columns':(Sites.get_schema())[model],'tabData':image_record,'dataCount':(Sites.get_record_count())})
-                elif model =='clusters':
-                    if action=='sel' and display_format=='form':
-                        results         = Clusters.objects(__raw__=query_fields).first() if  query_fields is not None else []
-                        return  jsonify({'columns':(Clusters.get_schema())[model],'tabData':results,'dataCount':1 })
-                    elif action=='sel' and display_format=='table' :
-                        image_record = Clusters.objects.all()
-                        return jsonify({'columns':(Clusters.get_schema())[model],'tabData':image_record,'dataCount':(Clusters.get_record_count())})  						
-                elif model =='datastores':
-                    if action=='sel' and display_format=='form':
-                        results         = Datastores.objects(__raw__=query_fields).first() if  query_fields is not None else []
-                        return  jsonify({'columns':(Datastores.get_schema())[model],'tabData':results,'dataCount':1 })
-                    elif action=='sel' and display_format=='table' :
-                        image_record = Datastores.objects.all()
-                        return jsonify({'columns':(Datastores.get_schema())[model],'tabData':image_record,'dataCount':(Datastores.get_record_count())})  
-                elif model =='datastores':
-                    if action=='sel' and display_format=='form':
-                        results         = Datastores.objects(__raw__=query_fields).first() if  query_fields is not None else []
-                        return  jsonify({'columns':(Datastores.get_schema())[model],'tabData':results,'dataCount':1 })
-                    elif action=='sel' and display_format=='table' :
-                        image_record = Datastores.objects.all()
-                        return jsonify({'columns':(Datastores.get_schema())[model],'tabData':image_record,'dataCount':(Datastores.get_record_count())}) 
-                elif model =='hosts':
-                    if action=='sel' and display_format=='form':
-                        results         = Hosts.objects(__raw__=query_fields).first() if  query_fields is not None else []
-                        return  jsonify({'columns':(Hosts.get_schema())[model],'tabData':results,'dataCount':1 })
-                    elif action=='sel' and display_format=='table' :
-                        image_record = Hosts.objects.all()
-                        return jsonify({'columns':(Hosts.get_schema())[model],'tabData':image_record,'dataCount':(Hosts.get_record_count())}) 
+                response = data_retriever(model, action, display_format,query_fields)
+                print(get_debug_template()[0].format(get_debug_template()[1](get_debug_template()[2]()).filename, get_debug_template()[1](get_debug_template()[2]()).lineno,
+                'login', "response:{} ".format(response)))
+                return  jsonify(response)
         else:
             response['message']      = 'form is not valid'
             response['isSuccessful'] = False
@@ -560,12 +604,13 @@ def index():
     opts['logo']        =  None
     opts['startTime']   =  datetime.utcnow()
     opts['timeOut']     =  None
-    opts['siteName']    =  'CSAM'
+    opts['siteName']    =  'CS3P'
     opts['userName']    =  None
     opts['previousDest']=  None
-    opts['currentUser'] =  current_user.username
+    opts['currentUser'] =  session['current_user'].username
     opts['currentTime'] =  datetime.utcnow()
     opts['siteTitle']   =  'Compute and Storage Self-Service Platform (CS3P)'
+    print("loading index page")
     return render_template('index.html', title='Dashboard',pageID='dashboard',options=opts)
 
 """
