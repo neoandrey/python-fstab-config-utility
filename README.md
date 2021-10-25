@@ -11,6 +11,8 @@ where:
 
 The parsing of yaml files in done with the  help of the pyyaml python module which is listed as one of the application requirements  in the requirements.txt file.
 
+A default yaml configuration file in the yaml folder is used if no configuration file is given as input and the default output file is etc\fstab file. 
+
 ## Structure of the FSTAB Configuration Utility
 
 The application consists of 2 main classes:
