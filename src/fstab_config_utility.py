@@ -21,7 +21,7 @@ class Fstab_Utility:
 # device; this may be used with UUID= as a more robust way to name devices
 # that works even if disks are added and removed. See fstab(5).
 #
-# <device>              <mount_point>               <file_system_type>          <options>                   <backup_operation>              <fs_check_order>
+# <device>              <mount_point>           <file_system_type>          <options>                   <backup_operation>              <fs_check_order>
 """
 
     def __init__(self, yaml_file):
@@ -36,8 +36,6 @@ class Fstab_Utility:
                         self.fstab_builder.append(Config(mount_setting).print())
                 else:
                     print('Config file {c} does not have an \'fstab\' setting'.format(c=self.config_yaml_file)) 
-                print(self.fstab_builder)
-                print('\n'.join(self.fstab_builder)) 
                 self.write_config()    
             else:
              print("The configuration file: {f} is not a file".format(f=self.config_yaml_file))   

@@ -11,7 +11,7 @@ class Mount_Config:
     export                     = None               # remote folder path for nfs filesystems
     root_reserve               = None               # value to change the default 5% root-reserve settings on ext filesystems
     allowed_filesystems        = ['ext','ext2','ext3','ext4','hpfs','iso9660','JFS','minix','msdos','ncpfs', 'nfs','ntfs','proc','Reiserfs','smb','sysv','umsdos','vfat','xfs','xiafs']
-    spacing                    = '\t\t\t\t\t'
+    spacing                    = '\t'
     
     def is_valid_filesystem(self,fs):
         return  str.lower(fs) in  self.allowed_filesystems
@@ -40,15 +40,20 @@ class Mount_Config:
                  print("insufficient information for nfs mount point:{p}".format(p=device_mount))
                  return
             fstab_line_builder.append(device_mount)
-            self.spacing.
+            fstab_line_builder.append(self.spacing)
             mount_point = self.mount_point
-            fstab_line_builder.append(mount_point)   
+            fstab_line_builder.append(2*self.spacing)
+            fstab_line_builder.append(mount_point) 
+            fstab_line_builder.append(3*self.spacing)  
             fstab_line_builder.append(self.filesystem_type)
+            fstab_line_builder.append(3*self.spacing)
             options     = ','.join(self.options) if isinstance(self.options, list) else self.options
             if self.root_reserve:
                 options +='usrquota,grpquota'           # use usrquota,grpquota to manage root reserve settings 
-            fstab_line_builder.append(options)  
+            fstab_line_builder.append(options)
+            fstab_line_builder.append(self.spacing) 
             fstab_line_builder.append(str(self.backup_operation))
+                        fstab_line_builder.append(3*self.spacing)
             check_order   = self.fs_check_order
             if mount_point == "/":
                 check_order = 1 
