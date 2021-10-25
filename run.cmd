@@ -48,8 +48,6 @@ echo "setting proxy as:%proxy_url%"
  SET  HTTPS_PROXY=%proxy_url%
 )
 
-SET FLASK_ENV=development
-SET FLASK_APP=cs3p.py
+python src/fstab_config_utility.py
 
-powershell  -File  %cd%\run.ps1
 pause

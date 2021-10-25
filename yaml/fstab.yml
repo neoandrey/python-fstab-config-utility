@@ -1,0 +1,18 @@
+fstab:
+  /dev/sda1:
+     mount: /boot
+     type: xfs
+  /dev/sda2:
+     mount: /
+     type: ext4
+  /dev/sdb1:
+     mount: /var/lib/postgresql
+     type: ext4
+     root-reserve: 10%
+  192.168.4.5:
+     mount: /home
+     export: /var/nfs/home
+     type: nfs
+     options:
+       - noexec
+       - nosuid
